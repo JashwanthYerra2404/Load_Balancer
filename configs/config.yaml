@@ -1,0 +1,26 @@
+# Load Balancer Configuration
+# ===========================
+#
+# This is the default configuration for development.
+# Production deployments should tune timeouts based on workload characteristics.
+
+server:
+  # Port the load balancer listens on.
+  port: 8080
+
+  # Maximum duration for reading the entire request, including body.
+  # Protects against slow clients (e.g., slow loris attacks).
+  read_timeout: 15s
+
+  # Maximum duration before timing out writes of the response.
+  # Protects against clients that don't consume the response.
+  write_timeout: 15s
+
+  # Maximum time to wait for the next request on a keep-alive connection.
+  idle_timeout: 60s
+
+# Backend server configuration.
+# In Phase 1, we support a single backend.
+# Phase 2 will extend this to support multiple backends.
+backend:
+  url: "http://localhost:9001"
