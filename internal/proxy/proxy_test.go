@@ -352,10 +352,9 @@ func BenchmarkProxy_ServeHTTP(b *testing.B) {
 	rp := New(p, zap.NewNop())
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
 
-	b.ResetTimer()
 	b.ReportAllocs()
 
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		w := httptest.NewRecorder()
 		rp.ServeHTTP(w, req)
 	}
