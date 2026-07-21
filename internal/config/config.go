@@ -25,12 +25,12 @@ import (
 
 // Config is the top-level configuration for the load balancer.
 //
-// In Phase 1, this is intentionally simple: one proxy server, one backend.
-// Future phases will extend this with multiple backends, health check config,
-// rate limiter settings, etc. The struct is designed for forward compatibility.
+// The configuration supports multiple backends for load balancing.
+// Future phases will extend this with health check config,
+// rate limiter settings, etc.
 type Config struct {
-	Server  ServerConfig  `yaml:"server"`
-	Backend BackendConfig `yaml:"backend"`
+	Server   ServerConfig   `yaml:"server"`
+	Backends []BackendConfig `yaml:"backends"`
 }
 
 // ServerConfig defines the proxy server's listening address and timeout behavior.
@@ -60,14 +60,27 @@ type ServerConfig struct {
 
 // BackendConfig defines a single upstream backend server.
 //
-// In Phase 1, we support exactly one backend. Phase 2 will extend this to
-// support multiple backends with weights and metadata.
-//
-// The URL must include the scheme (http:// or https://) because the proxy
-// needs to know which protocol to use for the upstream connection.
+// Each backend has a URL, a human-readable name for logging/dashboards,
+// a weight for weighted load balancing algorithms, and an optional
+// connection limit.
 type BackendConfig struct {
 	// URL is the full base URL of the backend server (e.g., "http://localhost:9001").
+	// Must include scheme (http:// or https://).
 	URL string `yaml:"url"`
+
+	// Name is a human-readable identifier for this backend.
+	// Used in logs, metrics, and response headers.
+	// Must be unique across all backends.
+	Name string `yaml:"name"`
+
+	// Weight determines the relative traffic share in weighted algorithms.
+	// Higher weight = more traffic. Default: 1. Range: 1-100.
+	// Ignored by simple round-robin.
+	Weight int `yaml:"weight"`
+
+	// MaxConnections is the maximum number of concurrent connections to this backend.
+	// 0 means unlimited. When reached, the backend is skipped during selection.
+	MaxConnections int `yaml:"max_connections"`
 }
 
 // Default configuration values.
@@ -148,17 +161,47 @@ func validate(cfg *Config) error {
 		errs = append(errs, fmt.Errorf("server.port must be between 1 and 65535, got %d", cfg.Server.Port))
 	}
 
-	// Validate backend URL format and scheme.
-	if cfg.Backend.URL == "" {
-		errs = append(errs, fmt.Errorf("backend.url is required"))
-	} else {
-		u, err := url.Parse(cfg.Backend.URL)
-		if err != nil {
-			errs = append(errs, fmt.Errorf("backend.url is not a valid URL: %w", err))
-		} else if u.Scheme != "http" && u.Scheme != "https" {
-			errs = append(errs, fmt.Errorf("backend.url scheme must be http or https, got %q", u.Scheme))
-		} else if u.Host == "" {
-			errs = append(errs, fmt.Errorf("backend.url must include a host"))
+	// Validate at least one backend is configured.
+	if len(cfg.Backends) == 0 {
+		errs = append(errs, fmt.Errorf("at least one backend is required"))
+	}
+
+	// Validate each backend and check for duplicate names.
+	seenNames := make(map[string]bool)
+	for i, b := range cfg.Backends {
+		prefix := fmt.Sprintf("backends[%d]", i)
+
+		// Validate URL.
+		if b.URL == "" {
+			errs = append(errs, fmt.Errorf("%s.url is required", prefix))
+		} else {
+			u, err := url.Parse(b.URL)
+			if err != nil {
+				errs = append(errs, fmt.Errorf("%s.url is not a valid URL: %w", prefix, err))
+			} else if u.Scheme != "http" && u.Scheme != "https" {
+				errs = append(errs, fmt.Errorf("%s.url scheme must be http or https, got %q", prefix, u.Scheme))
+			} else if u.Host == "" {
+				errs = append(errs, fmt.Errorf("%s.url must include a host", prefix))
+			}
+		}
+
+		// Validate name.
+		if b.Name == "" {
+			errs = append(errs, fmt.Errorf("%s.name is required", prefix))
+		} else if seenNames[b.Name] {
+			errs = append(errs, fmt.Errorf("%s.name %q is duplicate", prefix, b.Name))
+		} else {
+			seenNames[b.Name] = true
+		}
+
+		// Validate weight (if specified).
+		if b.Weight < 0 {
+			errs = append(errs, fmt.Errorf("%s.weight must be non-negative, got %d", prefix, b.Weight))
+		}
+
+		// Validate max_connections.
+		if b.MaxConnections < 0 {
+			errs = append(errs, fmt.Errorf("%s.max_connections must be non-negative, got %d", prefix, b.MaxConnections))
 		}
 	}
 
