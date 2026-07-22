@@ -3,10 +3,9 @@
 // This follows the "main is the composition root" pattern: main() wires
 // together all dependencies but contains no business logic.
 //
-// Phase 2 changes:
-//   - Creates a BackendPool from the config's backends list
-//   - Creates a Backend for each configured backend
-//   - Passes the pool to the proxy instead of a single URL
+// Phase 3 changes:
+//   - Pool creation uses a factory switch based on the configured algorithm
+//   - Supports: round_robin, least_connections, weighted_round_robin, ip_hash, random
 package main
 
 import (
@@ -45,14 +44,14 @@ func main() {
 		zap.String("path", *configPath),
 		zap.Int("port", cfg.Server.Port),
 		zap.Int("backends", len(cfg.Backends)),
+		zap.String("algorithm", cfg.Algorithm),
 	)
 
-	// Create the backend pool and populate it with backends from config.
+	// Create the backend pool using the configured algorithm.
 	//
-	// Each backend gets its own httputil.ReverseProxy with an isolated
-	// connection pool (http.Transport). This provides fault isolation:
-	// a slow backend won't exhaust connections meant for healthy ones.
-	backendPool := pool.NewRoundRobinPool(logger)
+	// This is the Strategy pattern payoff: the proxy doesn't know or care
+	// which algorithm is used. We select the implementation here at startup.
+	backendPool := createPool(cfg.Algorithm, logger)
 
 	for _, backendCfg := range cfg.Backends {
 		b, err := pool.NewBackend(
@@ -81,9 +80,31 @@ func main() {
 	logger.Info("load balancer starting",
 		zap.Int("port", cfg.Server.Port),
 		zap.Int("backends", len(cfg.Backends)),
+		zap.String("algorithm", cfg.Algorithm),
 	)
 
 	if err := srv.Start(); err != nil {
 		logger.Fatal("server error", zap.Error(err))
 	}
 }
+
+// createPool creates a BackendPool implementation based on the algorithm name.
+//
+// The algorithm name is validated by config.Load(), so we can safely assume
+// it's one of the supported values here.
+func createPool(algorithm string, logger *zap.Logger) pool.BackendPool {
+	switch algorithm {
+	case config.AlgorithmLeastConnections:
+		return pool.NewLeastConnectionsPool(logger)
+	case config.AlgorithmWeightedRoundRobin:
+		return pool.NewWeightedRoundRobinPool(logger)
+	case config.AlgorithmIPHash:
+		return pool.NewIPHashPool(logger)
+	case config.AlgorithmRandom:
+		return pool.NewRandomPool(logger)
+	default:
+		// Default to round-robin (includes "" and "round_robin").
+		return pool.NewRoundRobinPool(logger)
+	}
+}
+

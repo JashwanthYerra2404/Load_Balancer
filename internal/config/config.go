@@ -23,14 +23,36 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+// Valid algorithm names for the load balancer.
+//
+// These constants define the supported load balancing algorithms.
+// Each maps to a concrete BackendPool implementation in the pool package.
+const (
+	AlgorithmRoundRobin          = "round_robin"
+	AlgorithmLeastConnections    = "least_connections"
+	AlgorithmWeightedRoundRobin  = "weighted_round_robin"
+	AlgorithmIPHash              = "ip_hash"
+	AlgorithmRandom              = "random"
+)
+
+// validAlgorithms is the set of recognized algorithm names.
+// Used by validation to reject typos and unsupported values.
+var validAlgorithms = map[string]bool{
+	AlgorithmRoundRobin:         true,
+	AlgorithmLeastConnections:   true,
+	AlgorithmWeightedRoundRobin: true,
+	AlgorithmIPHash:             true,
+	AlgorithmRandom:             true,
+}
+
 // Config is the top-level configuration for the load balancer.
 //
 // The configuration supports multiple backends for load balancing.
-// Future phases will extend this with health check config,
-// rate limiter settings, etc.
+// The Algorithm field selects the backend selection strategy.
 type Config struct {
-	Server   ServerConfig   `yaml:"server"`
-	Backends []BackendConfig `yaml:"backends"`
+	Server    ServerConfig    `yaml:"server"`
+	Backends  []BackendConfig `yaml:"backends"`
+	Algorithm string          `yaml:"algorithm"`
 }
 
 // ServerConfig defines the proxy server's listening address and timeout behavior.
@@ -92,6 +114,7 @@ const (
 	DefaultReadTimeout  = 15 * time.Second
 	DefaultWriteTimeout = 15 * time.Second
 	DefaultIdleTimeout  = 60 * time.Second
+	DefaultAlgorithm    = AlgorithmRoundRobin
 )
 
 // Load reads a YAML configuration file from the given path, applies defaults
@@ -144,6 +167,9 @@ func applyDefaults(cfg *Config) {
 	}
 	if cfg.Server.IdleTimeout == 0 {
 		cfg.Server.IdleTimeout = DefaultIdleTimeout
+	}
+	if cfg.Algorithm == "" {
+		cfg.Algorithm = DefaultAlgorithm
 	}
 }
 
@@ -203,6 +229,11 @@ func validate(cfg *Config) error {
 		if b.MaxConnections < 0 {
 			errs = append(errs, fmt.Errorf("%s.max_connections must be non-negative, got %d", prefix, b.MaxConnections))
 		}
+	}
+
+	// Validate algorithm.
+	if !validAlgorithms[cfg.Algorithm] {
+		errs = append(errs, fmt.Errorf("algorithm %q is not supported (valid: round_robin, least_connections, weighted_round_robin, ip_hash, random)", cfg.Algorithm))
 	}
 
 	// Validate timeouts are positive.

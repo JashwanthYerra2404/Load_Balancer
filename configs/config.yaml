@@ -17,8 +17,18 @@ server:
   # Maximum time to wait for the next request on a keep-alive connection.
   idle_timeout: 60s
 
+# Load balancing algorithm.
+#
+# Supported algorithms:
+#   - round_robin:          Equal rotation across all backends (default)
+#   - least_connections:    Route to the backend with fewest active connections
+#   - weighted_round_robin: Distribute proportionally to backend weights
+#   - ip_hash:              Sticky sessions — same client IP goes to same backend
+#   - random:               Random healthy backend selection
+algorithm: round_robin
+
 # Backend servers for load balancing.
-# Requests are distributed across backends using round-robin.
+# Requests are distributed across backends using the selected algorithm.
 #
 # Each backend requires:
 #   - url: Full URL including scheme (http:// or https://)

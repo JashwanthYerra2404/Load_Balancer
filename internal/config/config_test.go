@@ -310,6 +310,68 @@ backends:
 	}
 }
 
+// TestLoad_DefaultAlgorithm verifies that the algorithm defaults to round_robin
+// when not specified.
+func TestLoad_DefaultAlgorithm(t *testing.T) {
+	content := `
+backends:
+  - url: "http://localhost:9001"
+    name: "b1"
+`
+	path := writeTestConfig(t, content)
+
+	cfg, err := Load(path)
+	if err != nil {
+		t.Fatalf("Load() returned unexpected error: %v", err)
+	}
+
+	if cfg.Algorithm != AlgorithmRoundRobin {
+		t.Errorf("Algorithm = %q, want %q", cfg.Algorithm, AlgorithmRoundRobin)
+	}
+}
+
+// TestLoad_ValidAlgorithms verifies that all supported algorithm names are accepted.
+func TestLoad_ValidAlgorithms(t *testing.T) {
+	algorithms := []string{
+		"round_robin",
+		"least_connections",
+		"weighted_round_robin",
+		"ip_hash",
+		"random",
+	}
+
+	for _, algo := range algorithms {
+		t.Run(algo, func(t *testing.T) {
+			content := fmt.Sprintf("algorithm: %s\nbackends:\n  - url: \"http://localhost:9001\"\n    name: \"b1\"\n", algo)
+			path := writeTestConfig(t, content)
+
+			cfg, err := Load(path)
+			if err != nil {
+				t.Fatalf("Load() returned unexpected error for algorithm %q: %v", algo, err)
+			}
+			if cfg.Algorithm != algo {
+				t.Errorf("Algorithm = %q, want %q", cfg.Algorithm, algo)
+			}
+		})
+	}
+}
+
+// TestLoad_InvalidAlgorithm verifies that unsupported algorithm names are rejected.
+func TestLoad_InvalidAlgorithm(t *testing.T) {
+	content := `
+algorithm: "fastest_response"
+backends:
+  - url: "http://localhost:9001"
+    name: "b1"
+`
+	path := writeTestConfig(t, content)
+
+	_, err := Load(path)
+	if err == nil {
+		t.Fatal("Load() should return error for unsupported algorithm")
+	}
+}
+
 // writeTestConfig is a test helper that writes config content to a temporary file.
 func writeTestConfig(t *testing.T, content string) string {
 	t.Helper()
@@ -323,3 +385,4 @@ func writeTestConfig(t *testing.T, content string) string {
 
 	return path
 }
+

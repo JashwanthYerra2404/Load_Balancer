@@ -34,6 +34,10 @@ type BackendPool interface {
 	// Used by health checkers to iterate all backends, and by metrics
 	// to report per-backend statistics.
 	Backends() []*Backend
+
+	// AddBackend adds a backend to the pool.
+	// Called during startup and config reload to populate the pool.
+	AddBackend(b *Backend)
 }
 
 // RoundRobinPool selects backends using round-robin rotation.
