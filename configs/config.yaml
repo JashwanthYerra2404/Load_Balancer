@@ -27,6 +27,41 @@ server:
 #   - random:               Random healthy backend selection
 algorithm: round_robin
 
+# Health check configuration.
+#
+# The health checker periodically probes each backend to determine if it's healthy.
+# Unhealthy backends are automatically removed from the rotation and re-added
+# when they recover.
+health_check:
+  # Time between health check probes.
+  interval: 10s
+
+  # Maximum time to wait for a health check response.
+  timeout: 5s
+
+  # HTTP path to probe on each backend.
+  path: "/health"
+
+  # Number of consecutive failures before marking a backend as dead.
+  failure_threshold: 3
+
+  # Number of consecutive successes before marking a recovered backend as alive.
+  success_threshold: 1
+
+# Retry configuration.
+#
+# When a request to a backend fails (connection error or 5xx response),
+# the proxy automatically retries with a different backend.
+retry:
+  # Additional attempts after first failure (total attempts = max_retries + 1).
+  max_retries: 2
+
+  # Wait time before first retry. Subsequent retries use exponential backoff.
+  initial_backoff: 100ms
+
+  # Maximum backoff cap for exponential backoff.
+  max_backoff: 1s
+
 # Backend servers for load balancing.
 # Requests are distributed across backends using the selected algorithm.
 #

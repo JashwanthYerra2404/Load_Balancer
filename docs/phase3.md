@@ -58,13 +58,13 @@ classDiagram
 
 ## Algorithm Comparison
 
-| Algorithm | Best For | Time | Lock | ns/op (seq) | ns/op (8-core) |
-|-----------|----------|------|------|-------------|----------------|
-| Round Robin | Equal backends, predictable rotation | O(n) | RWMutex | ~16 | ~111 |
-| Least Connections | Variable request durations | O(n) | RWMutex | ~15 | ~109 |
-| Weighted Round Robin | Heterogeneous backend capacities | O(n) | Mutex | ~13 | ~114 |
-| IP Hash | Sticky sessions, caching | O(1)* | RWMutex | ~25 | ~78 |
-| Random | Simplicity, baseline | O(1)* | RWMutex | ~15 | ~75 |
+| Algorithm | Best For | Time | Lock |
+|-----------|----------|------|------|
+| Round Robin | Equal backends, predictable rotation | O(n) | Lock-Free |
+| Least Connections | Variable request durations | O(n) | Lock-Free |
+| Weighted Round Robin | Heterogeneous backend capacities | O(n) | ReentrantLock |
+| IP Hash | Sticky sessions, caching | O(1)* | Lock-Free |
+| Random | Simplicity, baseline | O(1)* | Lock-Free |
 
 \* O(1) best case, O(n) worst case when backends are unhealthy.
 
@@ -105,7 +105,9 @@ Routes all requests from the same client IP to the same backend (sticky sessions
 10.0.0.50     → hash → Backend 1  (always)
 ```
 
-Uses FNV-1a hash (~2ns, stdlib `hash/fnv`). Falls back to forward-scan when the hashed backend is unhealthy — only affected clients are redistributed.
+Uses FNV-1a hash (~2ns). Falls back to forward-scan when the hashed backend is unhealthy — only affected clients are redistributed.
+
+**CDN-Aware:** Extracts client IP by checking `X-Forwarded-For` and `X-Real-IP` HTTP headers before falling back to the raw socket connection, ensuring correct routing when behind proxies or CDNs.
 
 ### Random (New)
 Picks a random healthy backend using `rand/v2` (Go 1.22+, concurrent-safe, auto-seeded).
@@ -141,34 +143,36 @@ algorithm: round_robin  # default
 
 | Algorithm | Lock Type | Rationale |
 |-----------|-----------|-----------|
-| RoundRobin | `sync.RWMutex` + `atomic.Uint64` | Counter is lock-free; slice rarely written |
-| LeastConnections | `sync.RWMutex` + `atomic.Uint64` | Reads `atomic.Int64` per backend; tie-breaker is lock-free |
-| WeightedRoundRobin | `sync.Mutex` | Every call writes `currentWeights`; Mutex is faster than RWMutex write-lock |
-| IPHash | `sync.RWMutex` | Hash computation is per-goroutine; no shared write state |
-| Random | `sync.RWMutex` | `rand/v2` is concurrent-safe; no shared write state |
+| RoundRobin | `CopyOnWriteArrayList` + `AtomicLong` | Counter is lock-free; backend list is lock-free for reads |
+| LeastConnections | `CopyOnWriteArrayList` + `AtomicLong` | Tie-breaker is lock-free; backend list is lock-free for reads |
+| WeightedRoundRobin | `ReentrantLock` | Every call writes `currentWeights`; lock is required to preserve SWRR algorithm state |
+| IPHash | `CopyOnWriteArrayList` | Hash computation is per-thread; backend list is lock-free for reads |
+| Random | `CopyOnWriteArrayList` | `ThreadLocalRandom` is concurrent-safe; backend list is lock-free for reads |
 
-## Benchmark Results (Apple M2, 8 cores)
+## Performance Characteristics (Java JMH)
 
+We benchmarked the Java lock-free pool implementations using JMH (Java Microbenchmark Harness) under both single-threaded (Seq) and highly concurrent (8-Thread) workloads. 
+
+```text
+Benchmark                                        Mode  Cnt        Score         Error   Units
+PoolBenchmark.testRandomConcurrent              thrpt    5  1003326.752 ±   56373.758  ops/ms  (~1 ns/op)
+PoolBenchmark.testRandomSeq                     thrpt    5   220733.963 ±   53377.239  ops/ms  (~4.5 ns/op)
+PoolBenchmark.testRoundRobinSeq                 thrpt    5   237241.105 ±    2488.647  ops/ms  (~4.2 ns/op)
+PoolBenchmark.testRoundRobinConcurrent          thrpt    5    27831.398 ±     932.179  ops/ms  (~36 ns/op)
+PoolBenchmark.testLeastConnectionsSeq           thrpt    5    38690.665 ±     540.911  ops/ms  (~26 ns/op)
+PoolBenchmark.testLeastConnectionsConcurrent    thrpt    5    16209.808 ±     245.282  ops/ms  (~62 ns/op)
+PoolBenchmark.testWeightedRoundRobinSeq         thrpt    5    24837.651 ±     261.554  ops/ms  (~40 ns/op)
+PoolBenchmark.testWeightedRoundRobinConcurrent  thrpt    5    12591.555 ±     301.441  ops/ms  (~79 ns/op)
+PoolBenchmark.testIPHashSeq                     thrpt    5    15006.923 ±     523.575  ops/ms  (~67 ns/op)
+PoolBenchmark.testIPHashConcurrent              thrpt    5    66647.895 ±    3701.251  ops/ms  (~15 ns/op)
 ```
-BenchmarkRoundRobinPool_Next-8                    71M     15.62 ns/op    0 B/op    0 allocs/op
-BenchmarkRoundRobinPool_NextParallel-8            11M    111.2  ns/op    0 B/op    0 allocs/op
-BenchmarkLeastConnectionsPool_Next-8              72M     15.49 ns/op    0 B/op    0 allocs/op
-BenchmarkLeastConnectionsPool_NextParallel-8      11M    109.0  ns/op    0 B/op    0 allocs/op
-BenchmarkWeightedRoundRobinPool_Next-8            93M     12.67 ns/op    0 B/op    0 allocs/op
-BenchmarkWeightedRoundRobinPool_NextParallel-8     9M    113.6  ns/op    0 B/op    0 allocs/op
-BenchmarkIPHashPool_Next-8                        47M     25.13 ns/op    0 B/op    0 allocs/op
-BenchmarkIPHashPool_NextParallel-8                15M     77.55 ns/op    0 B/op    0 allocs/op
-BenchmarkRandomPool_Next-8                        78M     15.33 ns/op    0 B/op    0 allocs/op
-BenchmarkRandomPool_NextParallel-8                16M     75.42 ns/op    0 B/op    0 allocs/op
-```
 
-All algorithms: **0 allocations per operation**.
+**Key takeaways:**
+1. **Lock-Free Reads Scale Perfectly**: `RandomPool` and `IPHashPool` have virtually no shared state writes. Under 8 threads, `RandomPool` exceeds 1 billion ops/sec (~1 ns/op) and `IPHashPool` scales to ~15 ns/op (dominated purely by the hash computation).
+2. **Atomic Write Contention**: `RoundRobinPool` and `LeastConnectionsPool` update a single `AtomicLong` per request. While they are lightning-fast sequentially, the CPU cache-line bouncing (CAS operations) under heavy concurrent load caps their throughput at ~25k - 30k ops/ms (~35-60 ns/op).
+3. **Mutex Overhead**: `WeightedRoundRobinPool` uses a strict `ReentrantLock` because it mutates the weights array on every request. It is the slowest concurrent algorithm (~79 ns/op) but still takes less than a microsecond, making it perfectly acceptable for standard workloads.
 
-Key observations:
-- **WeightedRoundRobin** is fastest sequentially (12.67ns) despite using `sync.Mutex`
-- **Random** and **IPHash** have the best parallel scaling (~75ns) due to no atomic counter contention
-- **IPHash** is slowest sequentially (25ns) due to FNV-1a hash computation
-- All algorithms add negligible overhead vs the ~44μs full proxy path
+By adopting `CopyOnWriteArrayList` for almost all pools (except `WeightedRoundRobinPool`), backend routing during peak load avoids read lock contention entirely, enabling much higher throughput across multiple CPU cores.
 
 ## Future Improvements
 

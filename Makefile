@@ -1,36 +1,43 @@
-.PHONY: build run test test-verbose test-race bench clean backend lint fmt
+.PHONY: build run backend backend2 backend3 test test-verbose clean help
 
 # ============================================================
 # Build
 # ============================================================
 
-## build: Compile the load balancer and backend binaries
+## build: Compile and package the load balancer fat JAR
 build:
-	@echo "==> Building load balancer..."
-	go build -o bin/loadbalancer ./cmd/loadbalancer
-	@echo "==> Building backend simulator..."
-	go build -o bin/backend ./cmd/backend
-	@echo "==> Done."
+	@echo "==> Building load balancer and backend simulator JAR..."
+	mvn clean package -DskipTests
+	@echo "==> Done. Fat JAR located at target/load-balancer-1.0.0-SNAPSHOT.jar"
 
 ## clean: Remove build artifacts
 clean:
-	rm -rf bin/
+	@echo "==> Cleaning build artifacts..."
+	mvn clean
 
 # ============================================================
 # Run
 # ============================================================
 
 ## run: Start the load balancer with default config
-run: build
-	./bin/loadbalancer --config configs/config.yaml
+run:
+	@echo "==> Starting load balancer..."
+	mvn exec:java -Dexec.mainClass="com.loadbalancer.LoadBalancerApplication" -Dexec.args="--config configs/config.yaml"
 
 ## backend: Start a backend simulator on port 9001
-backend: build
-	./bin/backend --port 9001 --name backend-1
+backend:
+	@echo "==> Starting backend simulator backend-1 on port 9001..."
+	mvn exec:java -Dexec.mainClass="com.loadbalancer.BackendSimulator" -Dexec.args="--port 9001 --name backend-1"
 
 ## backend2: Start a second backend simulator on port 9002
-backend2: build
-	./bin/backend --port 9002 --name backend-2
+backend2:
+	@echo "==> Starting backend simulator backend-2 on port 9002..."
+	mvn exec:java -Dexec.mainClass="com.loadbalancer.BackendSimulator" -Dexec.args="--port 9002 --name backend-2"
+
+## backend3: Start a third backend simulator on port 9003
+backend3:
+	@echo "==> Starting backend simulator backend-3 on port 9003..."
+	mvn exec:java -Dexec.mainClass="com.loadbalancer.BackendSimulator" -Dexec.args="--port 9003 --name backend-3"
 
 # ============================================================
 # Testing
@@ -38,41 +45,13 @@ backend2: build
 
 ## test: Run all unit tests
 test:
-	go test ./... -count=1
+	@echo "==> Running unit tests..."
+	mvn test
 
-## test-verbose: Run all tests with verbose output
+## test-verbose: Run all tests with console output
 test-verbose:
-	go test ./... -v -count=1
-
-## test-race: Run all tests with race detector enabled
-test-race:
-	go test ./... -v -race -count=1
-
-## bench: Run all benchmarks
-bench:
-	go test ./... -bench=. -benchmem -run=^$$ -count=3
-
-## cover: Run tests with coverage report
-cover:
-	go test ./... -coverprofile=coverage.out -count=1
-	go tool cover -html=coverage.out -o coverage.html
-	@echo "==> Coverage report: coverage.html"
-
-# ============================================================
-# Code Quality
-# ============================================================
-
-## fmt: Format all Go code
-fmt:
-	gofmt -s -w .
-
-## vet: Run go vet
-vet:
-	go vet ./...
-
-## lint: Run all code quality checks
-lint: fmt vet
-	@echo "==> Code quality checks passed."
+	@echo "==> Running unit tests (verbose)..."
+	mvn test -Dsurefire.useFile=false
 
 # ============================================================
 # Help
