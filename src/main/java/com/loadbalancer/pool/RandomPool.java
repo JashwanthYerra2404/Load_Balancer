@@ -48,7 +48,7 @@ public class RandomPool implements BackendPool {
         for (int i = 0; i < count; i++) {
             int idx = (start + i) % count;
             Backend b = backends.get(idx);
-            if (b.isAlive() && !b.isAtCapacity()) {
+            if (b.isAvailable() && !b.isAtCapacity()) {
                 return b;
             }
         }

@@ -1,6 +1,8 @@
+/Users/jashwanthyerra/Desktop/Projects/Load_Balancer/src/test/java/com/loadbalancer/benchmark/CircuitBreakerBenchmark.java
 /Users/jashwanthyerra/Desktop/Projects/Load_Balancer/src/test/java/com/loadbalancer/benchmark/HealthCheckerBenchmark.java
 /Users/jashwanthyerra/Desktop/Projects/Load_Balancer/src/test/java/com/loadbalancer/benchmark/PoolBenchmark.java
 /Users/jashwanthyerra/Desktop/Projects/Load_Balancer/src/test/java/com/loadbalancer/benchmark/ProxyBenchmark.java
+/Users/jashwanthyerra/Desktop/Projects/Load_Balancer/src/test/java/com/loadbalancer/circuit/CircuitBreakerTest.java
 /Users/jashwanthyerra/Desktop/Projects/Load_Balancer/src/test/java/com/loadbalancer/config/ConfigLoaderTest.java
 /Users/jashwanthyerra/Desktop/Projects/Load_Balancer/src/test/java/com/loadbalancer/health/HealthCheckerTest.java
 /Users/jashwanthyerra/Desktop/Projects/Load_Balancer/src/test/java/com/loadbalancer/pool/BackendTest.java

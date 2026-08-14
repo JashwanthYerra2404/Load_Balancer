@@ -54,7 +54,7 @@ public class WeightedRoundRobinPool implements BackendPool {
 
             for (int i = 0; i < count; i++) {
                 Backend b = backends.get(i);
-                if (!b.isAlive() || b.isAtCapacity()) {
+                if (!b.isAvailable() || b.isAtCapacity()) {
                     currentWeights.set(i, 0);
                     continue;
                 }

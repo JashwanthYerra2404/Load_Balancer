@@ -42,7 +42,7 @@ public class RoundRobinPool implements BackendPool {
         for (int i = 0; i < count; i++) {
             int idx = (int) Math.floorMod(next + i, (long) count);
             Backend backend = backends.get(idx);
-            if (backend.isAlive() && !backend.isAtCapacity()) {
+            if (backend.isAvailable() && !backend.isAtCapacity()) {
                 return backend;
             }
         }

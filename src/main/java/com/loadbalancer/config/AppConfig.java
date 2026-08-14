@@ -7,20 +7,22 @@ import java.util.Set;
  * Top-level application configuration.
  *
  * <p>Equivalent to Go's Config struct. Holds server settings, backend list,
- * the load balancing algorithm name, health check configuration, and retry policy.
+ * the load balancing algorithm name, health check, retry, and circuit breaker configuration.
  *
- * @param server      Server listening configuration
- * @param backends    List of upstream backend servers
- * @param algorithm   Load balancing algorithm name
- * @param healthCheck Health check configuration
- * @param retry       Retry mechanism configuration
+ * @param server         Server listening configuration
+ * @param backends       List of upstream backend servers
+ * @param algorithm      Load balancing algorithm name
+ * @param healthCheck    Health check configuration
+ * @param retry          Retry mechanism configuration
+ * @param circuitBreaker Circuit breaker configuration
  */
 public record AppConfig(
         ServerConfig server,
         List<BackendConfig> backends,
         String algorithm,
         HealthCheckConfig healthCheck,
-        RetryConfig retry
+        RetryConfig retry,
+        CircuitBreakerConfig circuitBreaker
 ) {
     /** Supported algorithm names — equivalent to Go's validAlgorithms map. */
     public static final String ALGORITHM_ROUND_ROBIN = "round_robin";

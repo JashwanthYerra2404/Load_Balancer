@@ -1,5 +1,7 @@
 package com.loadbalancer.pool;
 
+import com.loadbalancer.circuit.CircuitBreaker;
+import com.loadbalancer.config.CircuitBreakerConfig;
 import com.loadbalancer.proxy.CapturedRequest;
 import com.loadbalancer.proxy.ProxyResult;
 import com.sun.net.httpserver.HttpExchange;
@@ -29,6 +31,7 @@ import java.util.concurrent.atomic.AtomicLong;
  * <ul>
  *   <li>{@code alive} — {@link AtomicBoolean} for lock-free reads (every request checks this)</li>
  *   <li>{@code activeConnections} — {@link AtomicLong} for lock-free increment/decrement</li>
+ *   <li>{@code circuitBreaker} — per-backend state machine with volatile state (~1ns read)</li>
  *   <li>{@code httpClient} — thread-safe by design (Java HttpClient is immutable after build)</li>
  * </ul>
  *
@@ -44,6 +47,7 @@ public class Backend {
     private final int weight;
     private final int maxConnections;
     private final HttpClient httpClient;
+    private final CircuitBreaker circuitBreaker;
 
     /**
      * Whether this backend is currently healthy.
@@ -60,14 +64,16 @@ public class Backend {
     private final AtomicLong activeConnections = new AtomicLong(0);
 
     /**
-     * Creates a new Backend with a dedicated HttpClient.
+     * Creates a new Backend with a dedicated HttpClient and circuit breaker.
      *
      * @param url            Backend URL (e.g., "http://localhost:9001")
      * @param name           Human-readable name for logging
      * @param weight         Traffic weight for weighted algorithms (1-100)
      * @param maxConnections Max concurrent connections (0 = unlimited)
+     * @param cbConfig       Circuit breaker configuration
      */
-    public Backend(String url, String name, int weight, int maxConnections) {
+    public Backend(String url, String name, int weight, int maxConnections,
+                   CircuitBreakerConfig cbConfig) {
         this.url = URI.create(url);
         this.name = name;
         this.weight = Math.max(weight, 1);
@@ -79,6 +85,17 @@ public class Backend {
                 .connectTimeout(Duration.ofSeconds(30))
                 .followRedirects(HttpClient.Redirect.NEVER)
                 .build();
+
+        this.circuitBreaker = new CircuitBreaker(name, cbConfig);
+    }
+
+    /**
+     * Creates a new Backend with default circuit breaker configuration.
+     * Preserves backward compatibility with existing tests.
+     */
+    public Backend(String url, String name, int weight, int maxConnections) {
+        this(url, name, weight, maxConnections,
+                CircuitBreakerConfig.withDefaults(null, null, null));
     }
 
     // --- Getters ---
@@ -93,6 +110,33 @@ public class Backend {
      */
     public boolean isAlive() {
         return alive.get();
+    }
+
+    /**
+     * Returns whether the backend is available for traffic.
+     * Combines health check status (alive) with circuit breaker state.
+     *
+     * <p>Uses {@code canAcceptTraffic()} (read-only) instead of
+     * {@code allowRequest()} to avoid consuming the HALF_OPEN probe permit
+     * during pool iteration. The actual permit is acquired in
+     * {@link #forwardRequest(CapturedRequest)}.
+     *
+     * <p>A backend is available if:
+     * <ul>
+     *   <li>It's alive (health checks passing)</li>
+     *   <li>The circuit breaker can accept traffic (not OPEN, or timeout elapsed)</li>
+     * </ul>
+     */
+    public boolean isAvailable() {
+        return alive.get() && circuitBreaker.canAcceptTraffic();
+    }
+
+    /**
+     * Returns the circuit breaker for this backend.
+     * Exposed for testing and metrics.
+     */
+    public CircuitBreaker circuitBreaker() {
+        return circuitBreaker;
     }
 
     /**
@@ -142,6 +186,10 @@ public class Backend {
      * can inspect the result and decide whether to retry with a different backend
      * or commit the result to the client.
      *
+     * <p>Circuit breaker integration: if the circuit is OPEN, returns immediately
+     * without making a network call. On success/failure, records the outcome to
+     * the circuit breaker for future decisions.
+     *
      * <p>Active connections are tracked atomically: incremented before forwarding,
      * decremented after response completes (or on error). The try/finally pattern
      * guarantees the count is always accurate.
@@ -150,6 +198,11 @@ public class Backend {
      * @return the result of the forwarding attempt (never null)
      */
     public ProxyResult forwardRequest(CapturedRequest request) {
+        // Circuit breaker gate — short-circuit without network call
+        if (!circuitBreaker.allowRequest()) {
+            return ProxyResult.circuitOpen(name);
+        }
+
         activeConnections.incrementAndGet();
         try {
             // Build the target URL
@@ -184,7 +237,7 @@ public class Backend {
                     HttpResponse.BodyHandlers.ofInputStream()
             );
 
-            return new ProxyResult(
+            ProxyResult result = new ProxyResult(
                     response.statusCode(),
                     response.headers().map(),
                     response.body(),
@@ -192,11 +245,22 @@ public class Backend {
                     null
             );
 
+            // Record outcome to circuit breaker
+            if (result.isRetriable()) {
+                circuitBreaker.recordFailure();
+            } else {
+                circuitBreaker.recordSuccess();
+            }
+
+            return result;
+
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
+            circuitBreaker.recordFailure();
             return ProxyResult.connectionError(name, e);
         } catch (Exception e) {
             logger.error("Backend error: backend={}, url={}, error={}", name, url, e.getMessage());
+            circuitBreaker.recordFailure();
             return ProxyResult.connectionError(name, e);
         } finally {
             activeConnections.decrementAndGet();
@@ -288,7 +352,7 @@ public class Backend {
 
     @Override
     public String toString() {
-        return String.format("Backend{name='%s', url='%s', weight=%d, alive=%s, activeConns=%d}",
-                name, url, weight, alive.get(), activeConnections.get());
+        return String.format("Backend{name='%s', url='%s', weight=%d, alive=%s, circuit=%s, activeConns=%d}",
+                name, url, weight, alive.get(), circuitBreaker.state(), activeConnections.get());
     }
 }

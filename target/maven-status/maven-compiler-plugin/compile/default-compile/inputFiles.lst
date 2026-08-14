@@ -1,7 +1,9 @@
 /Users/jashwanthyerra/Desktop/Projects/Load_Balancer/src/main/java/com/loadbalancer/BackendSimulator.java
 /Users/jashwanthyerra/Desktop/Projects/Load_Balancer/src/main/java/com/loadbalancer/LoadBalancerApplication.java
+/Users/jashwanthyerra/Desktop/Projects/Load_Balancer/src/main/java/com/loadbalancer/circuit/CircuitBreaker.java
 /Users/jashwanthyerra/Desktop/Projects/Load_Balancer/src/main/java/com/loadbalancer/config/AppConfig.java
 /Users/jashwanthyerra/Desktop/Projects/Load_Balancer/src/main/java/com/loadbalancer/config/BackendConfig.java
+/Users/jashwanthyerra/Desktop/Projects/Load_Balancer/src/main/java/com/loadbalancer/config/CircuitBreakerConfig.java
 /Users/jashwanthyerra/Desktop/Projects/Load_Balancer/src/main/java/com/loadbalancer/config/ConfigLoader.java
 /Users/jashwanthyerra/Desktop/Projects/Load_Balancer/src/main/java/com/loadbalancer/config/ConfigValidationException.java
 /Users/jashwanthyerra/Desktop/Projects/Load_Balancer/src/main/java/com/loadbalancer/config/HealthCheckConfig.java

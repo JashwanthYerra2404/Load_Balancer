@@ -244,4 +244,40 @@ class ConfigLoaderTest {
                 """);
         assertThrows(ConfigValidationException.class, () -> ConfigLoader.load(path.toString()));
     }
+
+    @Test
+    void circuitBreakerDefaultsApplied() throws IOException {
+        Path path = writeConfig("""
+                backends:
+                  - url: "http://localhost:9001"
+                    name: "b1"
+                """);
+
+        AppConfig cfg = ConfigLoader.load(path.toString());
+        assertNotNull(cfg.circuitBreaker());
+        assertEquals(CircuitBreakerConfig.DEFAULT_FAILURE_THRESHOLD,
+                cfg.circuitBreaker().failureThreshold());
+        assertEquals(CircuitBreakerConfig.DEFAULT_SLIDING_WINDOW,
+                cfg.circuitBreaker().slidingWindow());
+        assertEquals(CircuitBreakerConfig.DEFAULT_RECOVERY_TIMEOUT,
+                cfg.circuitBreaker().recoveryTimeout());
+    }
+
+    @Test
+    void circuitBreakerCustomValues() throws IOException {
+        Path path = writeConfig("""
+                circuit_breaker:
+                  failure_threshold: 10
+                  sliding_window: 120s
+                  recovery_timeout: 60s
+                backends:
+                  - url: "http://localhost:9001"
+                    name: "b1"
+                """);
+
+        AppConfig cfg = ConfigLoader.load(path.toString());
+        assertEquals(10, cfg.circuitBreaker().failureThreshold());
+        assertEquals(Duration.ofSeconds(120), cfg.circuitBreaker().slidingWindow());
+        assertEquals(Duration.ofSeconds(60), cfg.circuitBreaker().recoveryTimeout());
+    }
 }

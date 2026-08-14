@@ -1,5 +1,7 @@
 package com.loadbalancer.proxy;
 
+import com.loadbalancer.circuit.CircuitBreaker;
+import com.loadbalancer.config.CircuitBreakerConfig;
 import com.loadbalancer.config.RetryConfig;
 import com.loadbalancer.pool.Backend;
 import com.loadbalancer.pool.BackendPool;
@@ -60,6 +62,33 @@ class ProxyHandlerTest {
 
             assertEquals(503, response.statusCode());
             assertTrue(response.body().contains("service unavailable"));
+        } finally {
+            server.stop(0);
+        }
+    }
+
+    @Test
+    void proxyResultCircuitOpenReturns503() throws Exception {
+        HttpServer server = HttpServer.create(new InetSocketAddress(0), 0);
+        server.createContext("/", exchange -> {
+            ProxyResult result = ProxyResult.circuitOpen("test-backend");
+            result.writeTo(exchange);
+        });
+        server.start();
+
+        try {
+            int port = server.getAddress().getPort();
+            HttpClient client = HttpClient.newHttpClient();
+            HttpResponse<String> response = client.send(
+                    HttpRequest.newBuilder()
+                            .uri(URI.create("http://localhost:" + port + "/test"))
+                            .GET()
+                            .build(),
+                    HttpResponse.BodyHandlers.ofString()
+            );
+
+            assertEquals(503, response.statusCode());
+            assertTrue(response.body().contains("circuit breaker open for test-backend"));
         } finally {
             server.stop(0);
         }
@@ -398,5 +427,121 @@ class ProxyHandlerTest {
                 "Backoff 1 should be ~20ms, got " + backoff1);
         assertTrue(backoff2 >= 25 && backoff2 <= 55,
                 "Backoff 2 should be ~40ms (capped at 50ms), got " + backoff2);
+    }
+
+    @Test
+    void circuitBreakerTripsAfterFailures() throws Exception {
+        // Circuit breaker config: trips after 2 failures in 5s, recovery after 100ms
+        CircuitBreakerConfig cbConfig = new CircuitBreakerConfig(
+                2, Duration.ofSeconds(5), Duration.ofMillis(100)
+        );
+
+        // Single backend that's unreachable → connection failures
+        RoundRobinPool pool = new RoundRobinPool();
+        Backend unreachable = new Backend("http://localhost:1", "unreachable", 1, 0, cbConfig);
+        pool.addBackend(unreachable);
+
+        // No retries — we want to observe circuit breaker state directly
+        ProxyHandler handler = new ProxyHandler(pool, NO_RETRY);
+
+        HttpServer proxyServer = HttpServer.create(new InetSocketAddress(0), 0);
+        proxyServer.createContext("/", handler);
+        proxyServer.start();
+
+        try {
+            int port = proxyServer.getAddress().getPort();
+            HttpClient client = HttpClient.newHttpClient();
+
+            // Request 1: actual connection failure (circuit records failure)
+            HttpResponse<String> r1 = client.send(
+                    HttpRequest.newBuilder()
+                            .uri(URI.create("http://localhost:" + port + "/test"))
+                            .GET().build(),
+                    HttpResponse.BodyHandlers.ofString());
+            assertEquals(502, r1.statusCode());
+
+            // Request 2: another connection failure → circuit trips (2 failures)
+            HttpResponse<String> r2 = client.send(
+                    HttpRequest.newBuilder()
+                            .uri(URI.create("http://localhost:" + port + "/test"))
+                            .GET().build(),
+                    HttpResponse.BodyHandlers.ofString());
+            // After the 2nd failure, circuit is now OPEN
+            assertEquals(CircuitBreaker.State.OPEN, unreachable.circuitBreaker().state());
+
+            // Request 3: circuit is OPEN → pool.next() returns null (no available backends)
+            // → 503 Service Unavailable
+            HttpResponse<String> r3 = client.send(
+                    HttpRequest.newBuilder()
+                            .uri(URI.create("http://localhost:" + port + "/test"))
+                            .GET().build(),
+                    HttpResponse.BodyHandlers.ofString());
+            assertEquals(503, r3.statusCode());
+            assertTrue(r3.body().contains("service unavailable"));
+        } finally {
+            proxyServer.stop(0);
+        }
+    }
+
+    @Test
+    void circuitBreakerRecoveryWithProbe() throws Exception {
+        // Fast circuit breaker: trips after 2 failures, recovers after 50ms
+        CircuitBreakerConfig cbConfig = new CircuitBreakerConfig(
+                2, Duration.ofSeconds(5), Duration.ofMillis(50)
+        );
+
+        // Good backend that always responds 200
+        HttpServer goodBackend = HttpServer.create(new InetSocketAddress(0), 0);
+        goodBackend.createContext("/", exchange -> {
+            byte[] body = "{\"status\":\"ok\"}".getBytes();
+            exchange.getResponseHeaders().set("Content-Type", "application/json");
+            exchange.sendResponseHeaders(200, body.length);
+            exchange.getResponseBody().write(body);
+            exchange.getResponseBody().close();
+        });
+        goodBackend.start();
+
+        try {
+            int backendPort = goodBackend.getAddress().getPort();
+
+            // Backend with circuit breaker
+            RoundRobinPool pool = new RoundRobinPool();
+            Backend backend = new Backend(
+                    "http://localhost:" + backendPort, "test-backend", 1, 0, cbConfig);
+            pool.addBackend(backend);
+
+            // Manually trip the circuit
+            backend.circuitBreaker().recordFailure();
+            backend.circuitBreaker().recordFailure();
+            assertEquals(CircuitBreaker.State.OPEN, backend.circuitBreaker().state());
+
+            // Wait for recovery timeout
+            Thread.sleep(80);
+
+            // Probe request should succeed → circuit closes
+            ProxyHandler handler = new ProxyHandler(pool, NO_RETRY);
+            HttpServer proxyServer = HttpServer.create(new InetSocketAddress(0), 0);
+            proxyServer.createContext("/", handler);
+            proxyServer.start();
+
+            try {
+                int proxyPort = proxyServer.getAddress().getPort();
+                HttpClient client = HttpClient.newHttpClient();
+
+                HttpResponse<String> response = client.send(
+                        HttpRequest.newBuilder()
+                                .uri(URI.create("http://localhost:" + proxyPort + "/test"))
+                                .GET().build(),
+                        HttpResponse.BodyHandlers.ofString());
+
+                assertEquals(200, response.statusCode());
+                assertEquals(CircuitBreaker.State.CLOSED, backend.circuitBreaker().state(),
+                        "Circuit should close after successful probe");
+            } finally {
+                proxyServer.stop(0);
+            }
+        } finally {
+            goodBackend.stop(0);
+        }
     }
 }

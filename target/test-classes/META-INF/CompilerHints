@@ -3,6 +3,13 @@ dontinline,*.*_avgt_jmhStub
 dontinline,*.*_sample_jmhStub
 dontinline,*.*_ss_jmhStub
 dontinline,*.*_thrpt_jmhStub
+inline,com/loadbalancer/benchmark/CircuitBreakerBenchmark.setup
+inline,com/loadbalancer/benchmark/CircuitBreakerBenchmark.testAllowRequestClosedConcurrent
+inline,com/loadbalancer/benchmark/CircuitBreakerBenchmark.testAllowRequestClosedSeq
+inline,com/loadbalancer/benchmark/CircuitBreakerBenchmark.testCanAcceptTrafficClosedConcurrent
+inline,com/loadbalancer/benchmark/CircuitBreakerBenchmark.testCanAcceptTrafficClosedSeq
+inline,com/loadbalancer/benchmark/CircuitBreakerBenchmark.testCanAcceptTrafficOpenConcurrent
+inline,com/loadbalancer/benchmark/CircuitBreakerBenchmark.testCanAcceptTrafficOpenSeq
 inline,com/loadbalancer/benchmark/HealthCheckerBenchmark.setup
 inline,com/loadbalancer/benchmark/HealthCheckerBenchmark.testIsAliveConcurrent
 inline,com/loadbalancer/benchmark/HealthCheckerBenchmark.testIsAliveSeq

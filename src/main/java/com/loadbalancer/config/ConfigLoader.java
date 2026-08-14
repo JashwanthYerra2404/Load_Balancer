@@ -116,7 +116,17 @@ public final class ConfigLoader {
                 parseDuration(retryMap, "max_backoff")
         );
 
-        return new AppConfig(server, List.copyOf(backends), algorithm, healthCheck, retry);
+        // Parse circuit breaker config
+        Map<String, Object> cbMap =
+                (Map<String, Object>) raw.getOrDefault("circuit_breaker", Map.of());
+        CircuitBreakerConfig circuitBreaker = CircuitBreakerConfig.withDefaults(
+                getInteger(cbMap, "failure_threshold"),
+                parseDuration(cbMap, "sliding_window"),
+                parseDuration(cbMap, "recovery_timeout")
+        );
+
+        return new AppConfig(server, List.copyOf(backends), algorithm, healthCheck, retry,
+                circuitBreaker);
     }
 
     /**

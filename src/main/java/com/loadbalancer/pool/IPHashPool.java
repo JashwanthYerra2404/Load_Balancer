@@ -64,7 +64,7 @@ public class IPHashPool implements BackendPool {
         for (int i = 0; i < count; i++) {
             int target = (idx + i) % count;
             Backend b = backends.get(target);
-            if (b.isAlive() && !b.isAtCapacity()) {
+            if (b.isAvailable() && !b.isAtCapacity()) {
                 return b;
             }
         }

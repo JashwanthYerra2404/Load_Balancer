@@ -45,7 +45,7 @@ public class LeastConnectionsPool implements BackendPool {
         long bestConns = Long.MAX_VALUE;
 
         for (Backend b : backends) {
-            if (!b.isAlive() || b.isAtCapacity()) continue;
+            if (!b.isAvailable() || b.isAtCapacity()) continue;
 
             long conns = b.activeConnections();
             if (conns < bestConns) {

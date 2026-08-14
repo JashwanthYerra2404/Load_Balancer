@@ -65,6 +65,14 @@ public record ProxyResult(
     }
 
     /**
+     * Returns true if this result represents a local circuit breaker rejection.
+     */
+    public boolean isCircuitBreakerRejection() {
+        return error != null && error.getMessage() != null &&
+                error.getMessage().startsWith("circuit breaker open");
+    }
+
+    /**
      * Writes this result to the client's {@link HttpExchange}.
      *
      * <p>This is the "commit" operation — once called, the response is streamed
@@ -73,9 +81,14 @@ public record ProxyResult(
      */
     public void writeTo(HttpExchange exchange) throws IOException {
         if (error != null) {
-            // Connection-level failure — send 502
-            writeErrorResponse(exchange, 502,
-                    String.format("backend %s unavailable", backendName));
+            if (isCircuitBreakerRejection()) {
+                writeErrorResponse(exchange, 503,
+                        String.format("circuit breaker open for %s", backendName));
+            } else {
+                int status = (statusCode != 0) ? statusCode : 502;
+                writeErrorResponse(exchange, status,
+                        String.format("backend %s unavailable", backendName));
+            }
             return;
         }
 
@@ -117,6 +130,15 @@ public record ProxyResult(
      */
     public static ProxyResult connectionError(String backendName, Exception e) {
         return new ProxyResult(0, Map.of(), null, backendName, e);
+    }
+
+    /**
+     * Creates a ProxyResult representing a circuit breaker rejection.
+     * The result is retriable so the retry loop tries a different backend.
+     */
+    public static ProxyResult circuitOpen(String backendName) {
+        return new ProxyResult(503, Map.of(), null, backendName,
+                new IOException("circuit breaker open for " + backendName));
     }
 
     /**

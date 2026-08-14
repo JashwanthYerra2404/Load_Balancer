@@ -115,21 +115,26 @@ public class ProxyHandler implements HttpHandler {
                 break;
             }
 
-            // Exponential backoff before retry
-            long backoffMs = calculateBackoff(attempt);
-            logger.warn("Retrying request: attempt={}/{}, backend={}, reason={}, backoff={}ms, path={}",
-                    attempt + 1, maxRetries,
-                    backend.name(),
-                    lastResult.error() != null ? lastResult.error().getMessage()
-                            : "HTTP " + lastResult.statusCode(),
-                    backoffMs,
-                    captured.requestURI().getPath());
+            // Exponential backoff before retry (skip for fast local circuit-breaker rejections)
+            if (lastResult.isCircuitBreakerRejection()) {
+                logger.warn("Instant retry (circuit breaker open): attempt={}/{}, backend={}, path={}",
+                        attempt + 1, maxRetries, backend.name(), captured.requestURI().getPath());
+            } else {
+                long backoffMs = calculateBackoff(attempt);
+                logger.warn("Retrying request: attempt={}/{}, backend={}, reason={}, backoff={}ms, path={}",
+                        attempt + 1, maxRetries,
+                        backend.name(),
+                        lastResult.error() != null ? lastResult.error().getMessage()
+                                : "HTTP " + lastResult.statusCode(),
+                        backoffMs,
+                        captured.requestURI().getPath());
 
-            try {
-                Thread.sleep(backoffMs);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                break;
+                try {
+                    Thread.sleep(backoffMs);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    break;
+                }
             }
         }
 

@@ -50,7 +50,8 @@ public class LoadBalancerApplication {
                         backendCfg.url(),
                         backendCfg.name(),
                         backendCfg.weight(),
-                        backendCfg.maxConnections()
+                        backendCfg.maxConnections(),
+                        config.circuitBreaker()
                 );
                 pool.addBackend(backend);
             }
@@ -71,10 +72,11 @@ public class LoadBalancerApplication {
             LoadBalancerServer server = new LoadBalancerServer(config.server(), proxyHandler);
 
             logger.info("Load balancer starting: port={}, backends={}, algorithm={}, " +
-                            "health_check_interval={}, max_retries={}",
+                            "health_check_interval={}, max_retries={}, cb_failure_threshold={}",
                     config.server().port(), config.backends().size(),
                     config.algorithm(), config.healthCheck().interval(),
-                    config.retry().maxRetries());
+                    config.retry().maxRetries(),
+                    config.circuitBreaker().failureThreshold());
 
             server.start();
 
