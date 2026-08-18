@@ -280,4 +280,43 @@ class ConfigLoaderTest {
         assertEquals(Duration.ofSeconds(120), cfg.circuitBreaker().slidingWindow());
         assertEquals(Duration.ofSeconds(60), cfg.circuitBreaker().recoveryTimeout());
     }
+
+    @Test
+    void stickySessionDefaultsApplied() throws IOException {
+        Path path = writeConfig("""
+                backends:
+                  - url: "http://localhost:9001"
+                    name: "b1"
+                """);
+
+        AppConfig cfg = ConfigLoader.load(path.toString());
+        assertNotNull(cfg.stickySession());
+        assertFalse(cfg.stickySession().enabled());
+        assertEquals(StickySessionConfig.DEFAULT_COOKIE_NAME, cfg.stickySession().cookieName());
+        assertEquals(StickySessionConfig.DEFAULT_TTL, cfg.stickySession().ttl());
+        assertTrue(cfg.stickySession().httpOnly());
+        assertFalse(cfg.stickySession().secure());
+    }
+
+    @Test
+    void stickySessionCustomValues() throws IOException {
+        Path path = writeConfig("""
+                sticky_session:
+                  enabled: true
+                  cookie_name: "MY_STICKY"
+                  ttl: 30m
+                  http_only: false
+                  secure: true
+                backends:
+                  - url: "http://localhost:9001"
+                    name: "b1"
+                """);
+
+        AppConfig cfg = ConfigLoader.load(path.toString());
+        assertTrue(cfg.stickySession().enabled());
+        assertEquals("MY_STICKY", cfg.stickySession().cookieName());
+        assertEquals(Duration.ofMinutes(30), cfg.stickySession().ttl());
+        assertFalse(cfg.stickySession().httpOnly());
+        assertTrue(cfg.stickySession().secure());
+    }
 }

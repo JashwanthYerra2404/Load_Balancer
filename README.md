@@ -31,6 +31,9 @@ src/main/java/com/loadbalancer/
     ServerConfig.java             # Server settings
     BackendConfig.java            # Per-backend settings
     HealthCheckConfig.java        # Health check settings
+    RetryConfig.java              # Retry settings
+    CircuitBreakerConfig.java     # Circuit breaker settings
+    StickySessionConfig.java      # Sticky session settings
     ConfigLoader.java             # YAML parsing & validation
     ConfigValidationException.java
   pool/
@@ -43,6 +46,12 @@ src/main/java/com/loadbalancer/
     RandomPool.java               # Random selection
   proxy/
     ProxyHandler.java             # HTTP handler (thin orchestrator)
+    ProxyResult.java              # Backend response + retry/retriability logic
+    CapturedRequest.java          # Snapshot of the inbound request
+  session/
+    StickySessionPool.java        # Cookie-based affinity (decorator)
+  circuit/
+    CircuitBreaker.java           # Per-backend circuit breaker
   server/
     LoadBalancerServer.java       # HTTP server with virtual threads
   health/
@@ -50,7 +59,11 @@ src/main/java/com/loadbalancer/
 configs/
   config.yaml                    # Default configuration
 docs/
-  phase1.md, phase2.md, phase3.md # Design documents
+  phase1.md ... phase8.md        # Design documents per phase
+src/test/java/com/loadbalancer/
+  benchmark/                     # JMH benchmarks (run via run-benchmarks.sh)
+  circuit/ config/ health/ pool/ proxy/ session/
+run-benchmarks.sh                # Compiles and runs the JMH suite
 ```
 
 ## Quick Start
@@ -120,6 +133,21 @@ health_check:
   success_threshold: 1   # Successes before marking alive
 ```
 
+## Sticky Sessions
+
+Optional cookie-based session affinity pins a client to a specific backend so in-memory session state (shopping carts, auth tokens) survives across requests. It works with any algorithm — `StickySessionPool` is a decorator around the configured pool. If the pinned backend dies or its circuit breaker opens, the client falls back to the normal algorithm and is re-pinned to a new backend.
+
+```yaml
+sticky_session:
+  enabled: false              # Opt-in
+  cookie_name: "LB_BACKEND"   # Affinity cookie name
+  ttl: 1h                     # Sliding max-age, refreshed every response (0 = session cookie)
+  http_only: true             # XSS protection
+  secure: false               # Set true for HTTPS
+```
+
+Response header format: `Set-Cookie: LB_BACKEND=backend-2; Path=/; Max-Age=3600; HttpOnly`
+
 ## Backend Simulator Endpoints
 
 | Endpoint | Description |
@@ -135,6 +163,7 @@ health_check:
 ```bash
 make test           # Run all unit tests
 make test-verbose   # Verbose output
+./run-benchmarks.sh # Run the JMH benchmark suite
 ```
 
 ## Completed Phases
@@ -143,16 +172,13 @@ make test-verbose   # Verbose output
 - [x] Phase 2: Multiple Backend Support
 - [x] Phase 3: Load Balancing Algorithms (5 algorithms)
 - [x] Phase 4: Health Checks
+- [x] Phase 5: Backend State Management
+- [x] Phase 6: Retry Mechanism
+- [x] Phase 7: Circuit Breaker
+- [x] Phase 8: Sticky Sessions
 
 ## Roadmap
 
-- [ ] Phase 2: Multiple Backend Support
-- [ ] Phase 3: Scheduling Algorithms (Round Robin, Least Connections, etc.)
-- [ ] Phase 4: Health Checks
-- [ ] Phase 5: Backend State Management
-- [ ] Phase 6: Retry Mechanism
-- [ ] Phase 7: Circuit Breaker
-- [ ] Phase 8: Sticky Sessions
 - [ ] Phase 9: Rate Limiter
 - [ ] Phase 10: Graceful Shutdown
 - [ ] Phase 11: Metrics (Prometheus)

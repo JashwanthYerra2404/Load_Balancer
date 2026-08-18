@@ -78,6 +78,29 @@ circuit_breaker:
   # Time in OPEN state before allowing a probe request (HALF_OPEN).
   recovery_timeout: 30s
 
+# Sticky sessions (cookie-based session affinity).
+#
+# When enabled, the load balancer injects a cookie that pins a client
+# to a specific backend. Subsequent requests with that cookie bypass
+# the load balancing algorithm and go directly to the pinned backend.
+# The cookie TTL acts as a sliding window — refreshed on every response.
+sticky_session:
+  # Whether sticky sessions are enabled (default: false).
+  enabled: false
+
+  # Name of the affinity cookie.
+  cookie_name: "LB_BACKEND"
+
+  # Cookie max-age. Acts as a sliding window of inactivity.
+  # 0 = session cookie (expires when browser closes).
+  ttl: 1h
+
+  # HttpOnly flag — prevents JavaScript access (XSS protection).
+  http_only: true
+
+  # Secure flag — cookie only sent over HTTPS.
+  secure: false
+
 # Backend servers for load balancing.
 # Requests are distributed across backends using the selected algorithm.
 #

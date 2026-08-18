@@ -1,6 +1,7 @@
 package com.loadbalancer.proxy;
 
 import com.loadbalancer.config.RetryConfig;
+import com.loadbalancer.config.StickySessionConfig;
 import com.loadbalancer.pool.Backend;
 import com.loadbalancer.pool.BackendPool;
 import com.sun.net.httpserver.HttpExchange;
@@ -39,10 +40,20 @@ public class ProxyHandler implements HttpHandler {
 
     private final BackendPool pool;
     private final RetryConfig retryConfig;
+    private final StickySessionConfig stickyConfig;
 
-    public ProxyHandler(BackendPool pool, RetryConfig retryConfig) {
+    public ProxyHandler(BackendPool pool, RetryConfig retryConfig,
+                        StickySessionConfig stickyConfig) {
         this.pool = pool;
         this.retryConfig = retryConfig;
+        this.stickyConfig = stickyConfig;
+    }
+
+    /**
+     * Convenience constructor without sticky sessions (backward compat for tests).
+     */
+    public ProxyHandler(BackendPool pool, RetryConfig retryConfig) {
+        this(pool, retryConfig, StickySessionConfig.withDefaults(null, null, null, null, null));
     }
 
     /**
@@ -140,7 +151,7 @@ public class ProxyHandler implements HttpHandler {
 
         // Step 3: Commit — write the best result to the client
         if (lastResult != null) {
-            lastResult.writeTo(exchange);
+            lastResult.writeTo(exchange, stickyConfig);
         } else {
             sendServiceUnavailable(exchange);
         }

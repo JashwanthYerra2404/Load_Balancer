@@ -6,6 +6,7 @@ import com.loadbalancer.health.HealthChecker;
 import com.loadbalancer.pool.*;
 import com.loadbalancer.proxy.ProxyHandler;
 import com.loadbalancer.server.LoadBalancerServer;
+import com.loadbalancer.session.StickySessionPool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -65,18 +66,27 @@ public class LoadBalancerApplication {
                 healthChecker.stop();
             }, "health-checker-shutdown"));
 
-            // Create proxy handler with retry support
-            ProxyHandler proxyHandler = new ProxyHandler(pool, config.retry());
+            // Wrap in sticky session decorator if enabled
+            if (config.stickySession().enabled()) {
+                pool = new StickySessionPool(pool, config.stickySession());
+                logger.info("Sticky sessions enabled: cookie={}, ttl={}",
+                        config.stickySession().cookieName(), config.stickySession().ttl());
+            }
+
+            // Create proxy handler with retry and sticky session support
+            ProxyHandler proxyHandler = new ProxyHandler(pool, config.retry(),
+                    config.stickySession());
 
             // Create and start the HTTP server
             LoadBalancerServer server = new LoadBalancerServer(config.server(), proxyHandler);
 
             logger.info("Load balancer starting: port={}, backends={}, algorithm={}, " +
-                            "health_check_interval={}, max_retries={}, cb_failure_threshold={}",
+                            "health_check_interval={}, max_retries={}, cb_failure_threshold={}, sticky={}",
                     config.server().port(), config.backends().size(),
                     config.algorithm(), config.healthCheck().interval(),
                     config.retry().maxRetries(),
-                    config.circuitBreaker().failureThreshold());
+                    config.circuitBreaker().failureThreshold(),
+                    config.stickySession().enabled());
 
             server.start();
 

@@ -7,7 +7,8 @@ import java.util.Set;
  * Top-level application configuration.
  *
  * <p>Equivalent to Go's Config struct. Holds server settings, backend list,
- * the load balancing algorithm name, health check, retry, and circuit breaker configuration.
+ * the load balancing algorithm name, health check, retry, circuit breaker,
+ * and sticky session configuration.
  *
  * @param server         Server listening configuration
  * @param backends       List of upstream backend servers
@@ -15,6 +16,7 @@ import java.util.Set;
  * @param healthCheck    Health check configuration
  * @param retry          Retry mechanism configuration
  * @param circuitBreaker Circuit breaker configuration
+ * @param stickySession  Sticky session configuration
  */
 public record AppConfig(
         ServerConfig server,
@@ -22,7 +24,8 @@ public record AppConfig(
         String algorithm,
         HealthCheckConfig healthCheck,
         RetryConfig retry,
-        CircuitBreakerConfig circuitBreaker
+        CircuitBreakerConfig circuitBreaker,
+        StickySessionConfig stickySession
 ) {
     /** Supported algorithm names — equivalent to Go's validAlgorithms map. */
     public static final String ALGORITHM_ROUND_ROBIN = "round_robin";

@@ -125,8 +125,19 @@ public final class ConfigLoader {
                 parseDuration(cbMap, "recovery_timeout")
         );
 
+        // Parse sticky session config
+        Map<String, Object> ssMap =
+                (Map<String, Object>) raw.getOrDefault("sticky_session", Map.of());
+        StickySessionConfig stickySession = StickySessionConfig.withDefaults(
+                getBoolean(ssMap, "enabled"),
+                getString(ssMap, "cookie_name"),
+                parseDuration(ssMap, "ttl"),
+                getBoolean(ssMap, "http_only"),
+                getBoolean(ssMap, "secure")
+        );
+
         return new AppConfig(server, List.copyOf(backends), algorithm, healthCheck, retry,
-                circuitBreaker);
+                circuitBreaker, stickySession);
     }
 
     /**
@@ -276,5 +287,16 @@ public final class ConfigLoader {
         } catch (NumberFormatException e) {
             return null;
         }
+    }
+
+    private static Boolean getBoolean(Map<String, Object> map, String key) {
+        Object value = map.get(key);
+        if (value instanceof Boolean b) {
+            return b;
+        }
+        if (value instanceof String s) {
+            return Boolean.parseBoolean(s.trim());
+        }
+        return null;
     }
 }

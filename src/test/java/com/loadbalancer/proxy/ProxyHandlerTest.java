@@ -3,9 +3,11 @@ package com.loadbalancer.proxy;
 import com.loadbalancer.circuit.CircuitBreaker;
 import com.loadbalancer.config.CircuitBreakerConfig;
 import com.loadbalancer.config.RetryConfig;
+import com.loadbalancer.config.StickySessionConfig;
 import com.loadbalancer.pool.Backend;
 import com.loadbalancer.pool.BackendPool;
 import com.loadbalancer.pool.RoundRobinPool;
+import com.loadbalancer.session.StickySessionPool;
 import com.sun.net.httpserver.HttpServer;
 import org.junit.jupiter.api.Test;
 
@@ -542,6 +544,252 @@ class ProxyHandlerTest {
             }
         } finally {
             goodBackend.stop(0);
+        }
+    }
+
+    @Test
+    void stickySessionCookieInResponse() throws Exception {
+        StickySessionConfig stickyConfig = new StickySessionConfig(
+                true, "LB_BACKEND", Duration.ofHours(1), true, false
+        );
+
+        HttpServer backend = HttpServer.create(new InetSocketAddress(0), 0);
+        backend.createContext("/", exchange -> {
+            byte[] body = "ok".getBytes();
+            exchange.sendResponseHeaders(200, body.length);
+            exchange.getResponseBody().write(body);
+            exchange.getResponseBody().close();
+        });
+        backend.start();
+
+        try {
+            RoundRobinPool pool = new RoundRobinPool();
+            pool.addBackend(new Backend(
+                    "http://localhost:" + backend.getAddress().getPort(),
+                    "test-backend", 1, 0));
+            StickySessionPool stickyPool = new StickySessionPool(pool, stickyConfig);
+
+            ProxyHandler handler = new ProxyHandler(stickyPool, NO_RETRY, stickyConfig);
+            HttpServer proxyServer = HttpServer.create(new InetSocketAddress(0), 0);
+            proxyServer.createContext("/", handler);
+            proxyServer.start();
+
+            try {
+                HttpClient client = HttpClient.newHttpClient();
+                HttpResponse<String> response = client.send(
+                        HttpRequest.newBuilder()
+                                .uri(URI.create("http://localhost:" + proxyServer.getAddress().getPort() + "/test"))
+                                .GET().build(),
+                        HttpResponse.BodyHandlers.ofString());
+
+                assertEquals(200, response.statusCode());
+
+                // Check for Set-Cookie header
+                var setCookies = response.headers().allValues("Set-Cookie");
+                assertFalse(setCookies.isEmpty(), "Response should include Set-Cookie");
+                assertTrue(setCookies.stream().anyMatch(c -> c.contains("LB_BACKEND=test-backend")),
+                        "Cookie should contain backend name");
+                assertTrue(setCookies.stream().anyMatch(c -> c.contains("HttpOnly")),
+                        "Cookie should have HttpOnly flag");
+                assertTrue(setCookies.stream().anyMatch(c -> c.contains("Max-Age=3600")),
+                        "Cookie should have Max-Age=3600");
+            } finally {
+                proxyServer.stop(0);
+            }
+        } finally {
+            backend.stop(0);
+        }
+    }
+
+    @Test
+    void stickySessionRoutesToPinnedBackend() throws Exception {
+        StickySessionConfig stickyConfig = new StickySessionConfig(
+                true, "LB_BACKEND", Duration.ofHours(1), true, false
+        );
+
+        // Two backends that return their own name
+        HttpServer backend1 = HttpServer.create(new InetSocketAddress(0), 0);
+        backend1.createContext("/", exchange -> {
+            byte[] body = "backend-1".getBytes();
+            exchange.sendResponseHeaders(200, body.length);
+            exchange.getResponseBody().write(body);
+            exchange.getResponseBody().close();
+        });
+        backend1.start();
+
+        HttpServer backend2 = HttpServer.create(new InetSocketAddress(0), 0);
+        backend2.createContext("/", exchange -> {
+            byte[] body = "backend-2".getBytes();
+            exchange.sendResponseHeaders(200, body.length);
+            exchange.getResponseBody().write(body);
+            exchange.getResponseBody().close();
+        });
+        backend2.start();
+
+        try {
+            RoundRobinPool pool = new RoundRobinPool();
+            pool.addBackend(new Backend(
+                    "http://localhost:" + backend1.getAddress().getPort(),
+                    "backend-1", 1, 0));
+            pool.addBackend(new Backend(
+                    "http://localhost:" + backend2.getAddress().getPort(),
+                    "backend-2", 1, 0));
+            StickySessionPool stickyPool = new StickySessionPool(pool, stickyConfig);
+
+            ProxyHandler handler = new ProxyHandler(stickyPool, NO_RETRY, stickyConfig);
+            HttpServer proxyServer = HttpServer.create(new InetSocketAddress(0), 0);
+            proxyServer.createContext("/", handler);
+            proxyServer.start();
+
+            try {
+                int port = proxyServer.getAddress().getPort();
+                HttpClient client = HttpClient.newHttpClient();
+
+                // Send request with cookie pinned to backend-2
+                // Even though round-robin would pick backend-1, sticky should win
+                for (int i = 0; i < 5; i++) {
+                    HttpResponse<String> response = client.send(
+                            HttpRequest.newBuilder()
+                                    .uri(URI.create("http://localhost:" + port + "/test"))
+                                    .header("Cookie", "LB_BACKEND=backend-2")
+                                    .GET().build(),
+                            HttpResponse.BodyHandlers.ofString());
+
+                    assertEquals(200, response.statusCode());
+                    assertEquals("backend-2", response.body(),
+                            "Sticky session should always route to backend-2");
+                }
+            } finally {
+                proxyServer.stop(0);
+            }
+        } finally {
+            backend1.stop(0);
+            backend2.stop(0);
+        }
+    }
+
+    @Test
+    void noStickyCookieWhenStickyDisabled() throws Exception {
+        StickySessionConfig disabled = new StickySessionConfig(
+                false, "LB_BACKEND", Duration.ofHours(1), true, false);
+
+        HttpServer backend = HttpServer.create(new InetSocketAddress(0), 0);
+        backend.createContext("/", exchange -> {
+            byte[] body = "ok".getBytes();
+            exchange.sendResponseHeaders(200, body.length);
+            exchange.getResponseBody().write(body);
+            exchange.getResponseBody().close();
+        });
+        backend.start();
+
+        try {
+            RoundRobinPool pool = new RoundRobinPool();
+            pool.addBackend(new Backend(
+                    "http://localhost:" + backend.getAddress().getPort(),
+                    "test-backend", 1, 0));
+
+            ProxyHandler handler = new ProxyHandler(pool, NO_RETRY, disabled);
+            HttpServer proxyServer = HttpServer.create(new InetSocketAddress(0), 0);
+            proxyServer.createContext("/", handler);
+            proxyServer.start();
+
+            try {
+                HttpClient client = HttpClient.newHttpClient();
+                HttpResponse<String> response = client.send(
+                        HttpRequest.newBuilder()
+                                .uri(URI.create("http://localhost:" + proxyServer.getAddress().getPort() + "/test"))
+                                .GET().build(),
+                        HttpResponse.BodyHandlers.ofString());
+
+                assertEquals(200, response.statusCode());
+                assertTrue(response.headers().allValues("Set-Cookie").isEmpty(),
+                        "No Set-Cookie expected when sticky sessions are disabled");
+            } finally {
+                proxyServer.stop(0);
+            }
+        } finally {
+            backend.stop(0);
+        }
+    }
+
+    @Test
+    void stickyFallsBackAndRepinsWhenPinnedBackendDown() throws Exception {
+        StickySessionConfig stickyConfig = new StickySessionConfig(
+                true, "LB_BACKEND", Duration.ofHours(1), true, false
+        );
+
+        HttpServer backend1 = HttpServer.create(new InetSocketAddress(0), 0);
+        backend1.createContext("/", exchange -> {
+            byte[] body = "backend-1".getBytes();
+            exchange.sendResponseHeaders(200, body.length);
+            exchange.getResponseBody().write(body);
+            exchange.getResponseBody().close();
+        });
+        backend1.start();
+
+        HttpServer backend2 = HttpServer.create(new InetSocketAddress(0), 0);
+        backend2.createContext("/", exchange -> {
+            byte[] body = "backend-2".getBytes();
+            exchange.sendResponseHeaders(200, body.length);
+            exchange.getResponseBody().write(body);
+            exchange.getResponseBody().close();
+        });
+        backend2.start();
+
+        try {
+            RoundRobinPool pool = new RoundRobinPool();
+            Backend b1 = new Backend(
+                    "http://localhost:" + backend1.getAddress().getPort(),
+                    "backend-1", 1, 0);
+            Backend b2 = new Backend(
+                    "http://localhost:" + backend2.getAddress().getPort(),
+                    "backend-2", 1, 0);
+            pool.addBackend(b1);
+            pool.addBackend(b2);
+            StickySessionPool stickyPool = new StickySessionPool(pool, stickyConfig);
+
+            ProxyHandler handler = new ProxyHandler(stickyPool, NO_RETRY, stickyConfig);
+            HttpServer proxyServer = HttpServer.create(new InetSocketAddress(0), 0);
+            proxyServer.createContext("/", handler);
+            proxyServer.start();
+
+            try {
+                int port = proxyServer.getAddress().getPort();
+                HttpClient client = HttpClient.newHttpClient();
+
+                // First request — gets pinned to backend-1 via Set-Cookie
+                HttpResponse<String> first = client.send(
+                        HttpRequest.newBuilder()
+                                .uri(URI.create("http://localhost:" + port + "/test"))
+                                .GET().build(),
+                        HttpResponse.BodyHandlers.ofString());
+                assertEquals("backend-1", first.body());
+                assertTrue(first.headers().allValues("Set-Cookie").stream()
+                        .anyMatch(c -> c.contains("LB_BACKEND=backend-1")));
+
+                // backend-1 goes down (health checker would do this)
+                b1.setAlive(false);
+
+                // Cookie still pins to backend-1, but it's dead →
+                // fallback to backend-2 AND re-pin with a fresh cookie
+                HttpResponse<String> second = client.send(
+                        HttpRequest.newBuilder()
+                                .uri(URI.create("http://localhost:" + port + "/test"))
+                                .header("Cookie", "LB_BACKEND=backend-1")
+                                .GET().build(),
+                        HttpResponse.BodyHandlers.ofString());
+
+                assertEquals(200, second.statusCode());
+                assertEquals("backend-2", second.body(), "Should fall back to live backend");
+                assertTrue(second.headers().allValues("Set-Cookie").stream()
+                                .anyMatch(c -> c.contains("LB_BACKEND=backend-2")),
+                        "Response should re-pin the client to backend-2");
+            } finally {
+                proxyServer.stop(0);
+            }
+        } finally {
+            backend1.stop(0);
+            backend2.stop(0);
         }
     }
 }

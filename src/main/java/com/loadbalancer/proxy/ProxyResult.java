@@ -1,5 +1,6 @@
 package com.loadbalancer.proxy;
 
+import com.loadbalancer.config.StickySessionConfig;
 import com.sun.net.httpserver.HttpExchange;
 
 import java.io.IOException;
@@ -80,6 +81,20 @@ public record ProxyResult(
      * when it's done retrying.
      */
     public void writeTo(HttpExchange exchange) throws IOException {
+        writeTo(exchange, null);
+    }
+
+    /**
+     * Writes this result to the client with optional sticky session cookie injection.
+     *
+     * <p>If stickyConfig is non-null and enabled, injects a Set-Cookie header
+     * that pins the client to the backend that served this response. The cookie
+     * TTL acts as a sliding window — refreshed on every response.
+     *
+     * @param exchange     the HTTP exchange to write to
+     * @param stickyConfig sticky session config (null = no cookie)
+     */
+    public void writeTo(HttpExchange exchange, StickySessionConfig stickyConfig) throws IOException {
         if (error != null) {
             if (isCircuitBreakerRejection()) {
                 writeErrorResponse(exchange, 503,
@@ -109,6 +124,12 @@ public record ProxyResult(
         exchange.getResponseHeaders().set("X-Proxy", "load-balancer");
         exchange.getResponseHeaders().set("X-Backend-Name", backendName);
         exchange.getResponseHeaders().add("Via", "1.1 load-balancer");
+
+        // Inject sticky session cookie (sliding window — refreshed every response)
+        if (stickyConfig != null && stickyConfig.enabled() && backendName != null) {
+            exchange.getResponseHeaders().add("Set-Cookie",
+                    stickyConfig.buildCookieHeader(backendName));
+        }
 
         // Write status and body
         // We use chunked transfer encoding (by passing 0) since we don't know the content length 
