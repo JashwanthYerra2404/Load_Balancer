@@ -2,8 +2,10 @@
 /Users/jashwanthyerra/Desktop/Projects/Load_Balancer/src/test/java/com/loadbalancer/benchmark/HealthCheckerBenchmark.java
 /Users/jashwanthyerra/Desktop/Projects/Load_Balancer/src/test/java/com/loadbalancer/benchmark/PoolBenchmark.java
 /Users/jashwanthyerra/Desktop/Projects/Load_Balancer/src/test/java/com/loadbalancer/benchmark/ProxyBenchmark.java
+/Users/jashwanthyerra/Desktop/Projects/Load_Balancer/src/test/java/com/loadbalancer/benchmark/StickySessionBenchmark.java
 /Users/jashwanthyerra/Desktop/Projects/Load_Balancer/src/test/java/com/loadbalancer/circuit/CircuitBreakerTest.java
 /Users/jashwanthyerra/Desktop/Projects/Load_Balancer/src/test/java/com/loadbalancer/config/ConfigLoaderTest.java
+/Users/jashwanthyerra/Desktop/Projects/Load_Balancer/src/test/java/com/loadbalancer/config/StickySessionConfigTest.java
 /Users/jashwanthyerra/Desktop/Projects/Load_Balancer/src/test/java/com/loadbalancer/health/HealthCheckerTest.java
 /Users/jashwanthyerra/Desktop/Projects/Load_Balancer/src/test/java/com/loadbalancer/pool/BackendTest.java
 /Users/jashwanthyerra/Desktop/Projects/Load_Balancer/src/test/java/com/loadbalancer/pool/IPHashPoolTest.java
@@ -14,3 +16,4 @@
 /Users/jashwanthyerra/Desktop/Projects/Load_Balancer/src/test/java/com/loadbalancer/proxy/CapturedRequestTest.java
 /Users/jashwanthyerra/Desktop/Projects/Load_Balancer/src/test/java/com/loadbalancer/proxy/ProxyHandlerTest.java
 /Users/jashwanthyerra/Desktop/Projects/Load_Balancer/src/test/java/com/loadbalancer/proxy/ProxyResultTest.java
+/Users/jashwanthyerra/Desktop/Projects/Load_Balancer/src/test/java/com/loadbalancer/session/StickySessionPoolTest.java

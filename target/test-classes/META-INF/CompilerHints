@@ -27,3 +27,13 @@ inline,com/loadbalancer/benchmark/PoolBenchmark.testWeightedRoundRobinSeq
 inline,com/loadbalancer/benchmark/ProxyBenchmark.setup
 inline,com/loadbalancer/benchmark/ProxyBenchmark.testCaptureGet
 inline,com/loadbalancer/benchmark/ProxyBenchmark.testCapturePost
+inline,com/loadbalancer/benchmark/StickySessionBenchmark.setup
+inline,com/loadbalancer/benchmark/StickySessionBenchmark.testBuildCookieHeaderSeq
+inline,com/loadbalancer/benchmark/StickySessionBenchmark.testParseCookieValueConcurrent
+inline,com/loadbalancer/benchmark/StickySessionBenchmark.testParseCookieValueSeq
+inline,com/loadbalancer/benchmark/StickySessionBenchmark.testPlainPoolConcurrent
+inline,com/loadbalancer/benchmark/StickySessionBenchmark.testPlainPoolSeq
+inline,com/loadbalancer/benchmark/StickySessionBenchmark.testStickyHitConcurrent
+inline,com/loadbalancer/benchmark/StickySessionBenchmark.testStickyHitSeq
+inline,com/loadbalancer/benchmark/StickySessionBenchmark.testStickyMissConcurrent
+inline,com/loadbalancer/benchmark/StickySessionBenchmark.testStickyMissSeq
