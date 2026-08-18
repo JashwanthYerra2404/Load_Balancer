@@ -5,6 +5,8 @@ import com.loadbalancer.config.ConfigLoader;
 import com.loadbalancer.health.HealthChecker;
 import com.loadbalancer.pool.*;
 import com.loadbalancer.proxy.ProxyHandler;
+import com.loadbalancer.ratelimit.RateLimiter;
+import com.loadbalancer.ratelimit.TokenBucketRateLimiter;
 import com.loadbalancer.server.LoadBalancerServer;
 import com.loadbalancer.session.StickySessionPool;
 import org.slf4j.Logger;
@@ -73,9 +75,21 @@ public class LoadBalancerApplication {
                         config.stickySession().cookieName(), config.stickySession().ttl());
             }
 
-            // Create proxy handler with retry and sticky session support
+            // Per-client rate limiter (null = disabled) — enforced in the
+            // proxy handler before backend selection
+            RateLimiter rateLimiter = config.rateLimit().enabled()
+                    ? new TokenBucketRateLimiter(
+                            config.rateLimit().requestsPerSecond(),
+                            config.rateLimit().burst())
+                    : null;
+            if (rateLimiter != null) {
+                logger.info("Rate limiting enabled: rate={}/s, burst={}, scope=per-client",
+                        config.rateLimit().requestsPerSecond(), config.rateLimit().burst());
+            }
+
+            // Create proxy handler with retry, sticky session, and rate limit support
             ProxyHandler proxyHandler = new ProxyHandler(pool, config.retry(),
-                    config.stickySession());
+                    config.stickySession(), rateLimiter);
 
             // Create and start the HTTP server
             LoadBalancerServer server = new LoadBalancerServer(config.server(), proxyHandler);

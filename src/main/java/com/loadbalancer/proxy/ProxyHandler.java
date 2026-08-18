@@ -4,6 +4,8 @@ import com.loadbalancer.config.RetryConfig;
 import com.loadbalancer.config.StickySessionConfig;
 import com.loadbalancer.pool.Backend;
 import com.loadbalancer.pool.BackendPool;
+import com.loadbalancer.ratelimit.RateLimiter;
+import com.loadbalancer.util.ClientIp;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import org.slf4j.Logger;
@@ -21,8 +23,9 @@ import java.util.concurrent.ThreadLocalRandom;
  * <p>Equivalent to Go's proxy.ReverseProxy. This is the "glue" between
  * the HTTP server and the backend pool.
  *
- * <p><b>Retry flow:</b>
+ * <p><b>Request flow:</b>
  * <ol>
+ *   <li>Rate limit check (429 before any body buffering when enabled)</li>
  *   <li>Capture the incoming request (buffer body for replay)</li>
  *   <li>Ask the pool for a backend</li>
  *   <li>Forward request via backend.forwardRequest()</li>
@@ -41,19 +44,29 @@ public class ProxyHandler implements HttpHandler {
     private final BackendPool pool;
     private final RetryConfig retryConfig;
     private final StickySessionConfig stickyConfig;
+    private final RateLimiter rateLimiter;
 
     public ProxyHandler(BackendPool pool, RetryConfig retryConfig,
-                        StickySessionConfig stickyConfig) {
+                        StickySessionConfig stickyConfig, RateLimiter rateLimiter) {
         this.pool = pool;
         this.retryConfig = retryConfig;
         this.stickyConfig = stickyConfig;
+        this.rateLimiter = rateLimiter;
     }
 
     /**
-     * Convenience constructor without sticky sessions (backward compat for tests).
+     * Convenience constructor without rate limiting (backward compat for tests).
+     */
+    public ProxyHandler(BackendPool pool, RetryConfig retryConfig,
+                        StickySessionConfig stickyConfig) {
+        this(pool, retryConfig, stickyConfig, null);
+    }
+
+    /**
+     * Convenience constructor with only sticky defaults (backward compat for tests).
      */
     public ProxyHandler(BackendPool pool, RetryConfig retryConfig) {
-        this(pool, retryConfig, StickySessionConfig.withDefaults(null, null, null, null, null));
+        this(pool, retryConfig, StickySessionConfig.withDefaults(null, null, null, null, null), null);
     }
 
     /**
@@ -77,6 +90,18 @@ public class ProxyHandler implements HttpHandler {
      */
     @Override
     public void handle(HttpExchange exchange) throws IOException {
+        // Step 0: Rate limit check — reject before any body buffering or
+        // backend selection. A 429 must be as cheap as possible.
+        if (rateLimiter != null) {
+            String clientId = ClientIp.extract(exchange);
+            if (!rateLimiter.tryAcquire(clientId)) {
+                long retryAfter = rateLimiter.retryAfterMillis(clientId);
+                logger.info("Rate limit exceeded: client={}, retry_after_ms={}", clientId, retryAfter);
+                sendTooManyRequests(exchange, retryAfter);
+                return;
+            }
+        }
+
         // Step 1: Capture the request upfront for replay capability
         CapturedRequest captured = CapturedRequest.from(exchange);
 
@@ -186,6 +211,24 @@ public class ProxyHandler implements HttpHandler {
         byte[] bytes = body.getBytes();
         exchange.getResponseHeaders().set("Content-Type", "application/json");
         exchange.sendResponseHeaders(503, bytes.length);
+        try (OutputStream os = exchange.getResponseBody()) {
+            os.write(bytes);
+        }
+    }
+
+    /**
+     * Sends a 429 Too Many Requests response with a Retry-After header.
+     *
+     * <p>{@code Retry-After} is in seconds (per RFC 9110 delay-seconds) —
+     * rounded up from the limiter's millisecond estimate.
+     */
+    private void sendTooManyRequests(HttpExchange exchange, long retryAfterMillis) throws IOException {
+        String body = "{\"error\":\"too many requests\",\"message\":\"rate limit exceeded\",\"status\":429}";
+        byte[] bytes = body.getBytes();
+        exchange.getResponseHeaders().set("Content-Type", "application/json");
+        exchange.getResponseHeaders().set("Retry-After",
+                String.valueOf(Math.max(1, (retryAfterMillis + 999) / 1000)));
+        exchange.sendResponseHeaders(429, bytes.length);
         try (OutputStream os = exchange.getResponseBody()) {
             os.write(bytes);
         }

@@ -17,6 +17,7 @@ import java.util.Set;
  * @param retry          Retry mechanism configuration
  * @param circuitBreaker Circuit breaker configuration
  * @param stickySession  Sticky session configuration
+ * @param rateLimit      Rate limiter configuration
  */
 public record AppConfig(
         ServerConfig server,
@@ -25,7 +26,8 @@ public record AppConfig(
         HealthCheckConfig healthCheck,
         RetryConfig retry,
         CircuitBreakerConfig circuitBreaker,
-        StickySessionConfig stickySession
+        StickySessionConfig stickySession,
+        RateLimiterConfig rateLimit
 ) {
     /** Supported algorithm names — equivalent to Go's validAlgorithms map. */
     public static final String ALGORITHM_ROUND_ROBIN = "round_robin";

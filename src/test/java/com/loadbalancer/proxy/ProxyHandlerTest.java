@@ -7,6 +7,8 @@ import com.loadbalancer.config.StickySessionConfig;
 import com.loadbalancer.pool.Backend;
 import com.loadbalancer.pool.BackendPool;
 import com.loadbalancer.pool.RoundRobinPool;
+import com.loadbalancer.ratelimit.RateLimiter;
+import com.loadbalancer.ratelimit.TokenBucketRateLimiter;
 import com.loadbalancer.session.StickySessionPool;
 import com.sun.net.httpserver.HttpServer;
 import org.junit.jupiter.api.Test;
@@ -791,5 +793,150 @@ class ProxyHandlerTest {
             backend1.stop(0);
             backend2.stop(0);
         }
+    }
+
+    @Test
+    void rateLimitRejectsWith429AfterBurst() throws Exception {
+        // Tiny limits: 1 req/s sustained, burst of 2
+        RateLimiter limiter = new TokenBucketRateLimiter(1, 2);
+
+        HttpServer backend = HttpServer.create(new InetSocketAddress(0), 0);
+        backend.createContext("/", exchange -> {
+            byte[] body = "ok".getBytes();
+            exchange.sendResponseHeaders(200, body.length);
+            exchange.getResponseBody().write(body);
+            exchange.getResponseBody().close();
+        });
+        backend.start();
+
+        try {
+            RoundRobinPool pool = new RoundRobinPool();
+            pool.addBackend(new Backend(
+                    "http://localhost:" + backend.getAddress().getPort(),
+                    "test-backend", 1, 0));
+
+            ProxyHandler handler = new ProxyHandler(pool, NO_RETRY,
+                    StickySessionConfig.withDefaults(null, null, null, null, null), limiter);
+            HttpServer proxyServer = HttpServer.create(new InetSocketAddress(0), 0);
+            proxyServer.createContext("/", handler);
+            proxyServer.start();
+
+            try {
+                HttpClient client = HttpClient.newHttpClient();
+                int port = proxyServer.getAddress().getPort();
+
+                // First two requests (burst capacity) pass
+                assertEquals(200, send(client, port).statusCode());
+                assertEquals(200, send(client, port).statusCode());
+
+                // Third immediate request is limited
+                HttpResponse<String> limited = send(client, port);
+                assertEquals(429, limited.statusCode());
+                assertTrue(limited.body().contains("too many requests"));
+                assertNotNull(limited.headers().firstValue("Retry-After").orElse(null),
+                        "429 must include Retry-After");
+                assertTrue(Long.parseLong(limited.headers().firstValue("Retry-After").get()) >= 1);
+            } finally {
+                proxyServer.stop(0);
+            }
+        } finally {
+            backend.stop(0);
+        }
+    }
+
+    @Test
+    void rateLimitIsPerClient() throws Exception {
+        // Each client gets its own bucket: A exhausted, B still fine
+        RateLimiter limiter = new TokenBucketRateLimiter(1, 1);
+
+        HttpServer backend = HttpServer.create(new InetSocketAddress(0), 0);
+        backend.createContext("/", exchange -> {
+            byte[] body = "ok".getBytes();
+            exchange.sendResponseHeaders(200, body.length);
+            exchange.getResponseBody().write(body);
+            exchange.getResponseBody().close();
+        });
+        backend.start();
+
+        try {
+            RoundRobinPool pool = new RoundRobinPool();
+            pool.addBackend(new Backend(
+                    "http://localhost:" + backend.getAddress().getPort(),
+                    "test-backend", 1, 0));
+
+            ProxyHandler handler = new ProxyHandler(pool, NO_RETRY,
+                    StickySessionConfig.withDefaults(null, null, null, null, null), limiter);
+            HttpServer proxyServer = HttpServer.create(new InetSocketAddress(0), 0);
+            proxyServer.createContext("/", handler);
+            proxyServer.start();
+
+            try {
+                HttpClient client = HttpClient.newHttpClient();
+                int port = proxyServer.getAddress().getPort();
+
+                // Client A exhausts its bucket
+                assertEquals(200, send(client, port).statusCode());
+                assertEquals(429, send(client, port).statusCode());
+
+                // Client B (different X-Forwarded-For) is unaffected
+                HttpResponse<String> b = client.send(
+                        HttpRequest.newBuilder()
+                                .uri(URI.create("http://localhost:" + port + "/test"))
+                                .header("X-Forwarded-For", "203.0.113.9")
+                                .GET().build(),
+                        HttpResponse.BodyHandlers.ofString());
+                assertEquals(200, b.statusCode());
+            } finally {
+                proxyServer.stop(0);
+            }
+        } finally {
+            backend.stop(0);
+        }
+    }
+
+    @Test
+    void noRateLimitingWithoutLimiter() throws Exception {
+        // Null limiter (disabled config) → many rapid requests all pass
+        HttpServer backend = HttpServer.create(new InetSocketAddress(0), 0);
+        backend.createContext("/", exchange -> {
+            byte[] body = "ok".getBytes();
+            exchange.sendResponseHeaders(200, body.length);
+            exchange.getResponseBody().write(body);
+            exchange.getResponseBody().close();
+        });
+        backend.start();
+
+        try {
+            RoundRobinPool pool = new RoundRobinPool();
+            pool.addBackend(new Backend(
+                    "http://localhost:" + backend.getAddress().getPort(),
+                    "test-backend", 1, 0));
+
+            ProxyHandler handler = new ProxyHandler(pool, NO_RETRY,
+                    StickySessionConfig.withDefaults(null, null, null, null, null), null);
+            HttpServer proxyServer = HttpServer.create(new InetSocketAddress(0), 0);
+            proxyServer.createContext("/", handler);
+            proxyServer.start();
+
+            try {
+                HttpClient client = HttpClient.newHttpClient();
+                int port = proxyServer.getAddress().getPort();
+                for (int i = 0; i < 20; i++) {
+                    assertEquals(200, send(client, port).statusCode());
+                }
+            } finally {
+                proxyServer.stop(0);
+            }
+        } finally {
+            backend.stop(0);
+        }
+    }
+
+    private static HttpResponse<String> send(HttpClient client, int port) throws Exception {
+        return client.send(
+                HttpRequest.newBuilder()
+                        .uri(URI.create("http://localhost:" + port + "/test"))
+                        .GET().build(),
+                HttpResponse.BodyHandlers.ofString());
     }
 }

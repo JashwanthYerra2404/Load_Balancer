@@ -319,4 +319,67 @@ class ConfigLoaderTest {
         assertFalse(cfg.stickySession().httpOnly());
         assertTrue(cfg.stickySession().secure());
     }
+
+    @Test
+    void rateLimitDefaultsApplied() throws IOException {
+        Path path = writeConfig("""
+                backends:
+                  - url: "http://localhost:9001"
+                    name: "b1"
+                """);
+
+        AppConfig cfg = ConfigLoader.load(path.toString());
+        assertNotNull(cfg.rateLimit());
+        assertFalse(cfg.rateLimit().enabled());
+        assertEquals(RateLimiterConfig.DEFAULT_REQUESTS_PER_SECOND,
+                cfg.rateLimit().requestsPerSecond());
+        // Burst defaults to the rate
+        assertEquals(cfg.rateLimit().requestsPerSecond(), cfg.rateLimit().burst());
+    }
+
+    @Test
+    void rateLimitCustomValues() throws IOException {
+        Path path = writeConfig("""
+                rate_limit:
+                  enabled: true
+                  requests_per_second: 50
+                  burst: 200
+                backends:
+                  - url: "http://localhost:9001"
+                    name: "b1"
+                """);
+
+        AppConfig cfg = ConfigLoader.load(path.toString());
+        assertTrue(cfg.rateLimit().enabled());
+        assertEquals(50, cfg.rateLimit().requestsPerSecond());
+        assertEquals(200, cfg.rateLimit().burst());
+    }
+
+    @Test
+    void rateLimitInvalidRateRejected() throws IOException {
+        Path path = writeConfig("""
+                rate_limit:
+                  enabled: true
+                  requests_per_second: 0
+                backends:
+                  - url: "http://localhost:9001"
+                    name: "b1"
+                """);
+
+        assertThrows(ConfigValidationException.class, () -> ConfigLoader.load(path.toString()));
+    }
+
+    @Test
+    void rateLimitInvalidBurstRejectedEvenWhenDisabled() throws IOException {
+        Path path = writeConfig("""
+                rate_limit:
+                  enabled: false
+                  burst: -5
+                backends:
+                  - url: "http://localhost:9001"
+                    name: "b1"
+                """);
+
+        assertThrows(ConfigValidationException.class, () -> ConfigLoader.load(path.toString()));
+    }
 }

@@ -101,6 +101,23 @@ sticky_session:
   # Secure flag — cookie only sent over HTTPS.
   secure: false
 
+# Rate limiting (per-client token bucket).
+#
+# When enabled, each client IP gets a token bucket admitting requests at a
+# sustained rate with a bounded burst. Clients that exceed their limit receive
+# 429 Too Many Requests with a Retry-After header. Limits are per-client —
+# one abusive client cannot affect others.
+rate_limit:
+  # Whether rate limiting is enabled (default: false).
+  enabled: false
+
+  # Sustained requests per second allowed per client.
+  requests_per_second: 100
+
+  # Bucket capacity — the maximum back-to-back burst a client can make
+  # after being idle (default: equals requests_per_second).
+  burst: 100
+
 # Backend servers for load balancing.
 # Requests are distributed across backends using the selected algorithm.
 #

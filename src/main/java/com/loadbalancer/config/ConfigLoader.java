@@ -136,8 +136,17 @@ public final class ConfigLoader {
                 getBoolean(ssMap, "secure")
         );
 
+        // Parse rate limiter config
+        Map<String, Object> rlMap =
+                (Map<String, Object>) raw.getOrDefault("rate_limit", Map.of());
+        RateLimiterConfig rateLimit = RateLimiterConfig.withDefaults(
+                getBoolean(rlMap, "enabled"),
+                getInteger(rlMap, "requests_per_second"),
+                getInteger(rlMap, "burst")
+        );
+
         return new AppConfig(server, List.copyOf(backends), algorithm, healthCheck, retry,
-                circuitBreaker, stickySession);
+                circuitBreaker, stickySession, rateLimit);
     }
 
     /**
@@ -225,6 +234,18 @@ public final class ConfigLoader {
         }
         if (config.server().idleTimeout().isNegative()) {
             errors.add("server.idle_timeout must be positive, got " + config.server().idleTimeout());
+        }
+
+        // Validate rate limiter — strict even when disabled so a bad value
+        // fails at startup rather than when someone flips enabled
+        RateLimiterConfig rl = config.rateLimit();
+        if (rl.requestsPerSecond() < 1 || rl.requestsPerSecond() > RateLimiterConfig.MAX_RATE) {
+            errors.add("rate_limit.requests_per_second must be between 1 and "
+                    + RateLimiterConfig.MAX_RATE + ", got " + rl.requestsPerSecond());
+        }
+        if (rl.burst() < 1 || rl.burst() > RateLimiterConfig.MAX_RATE) {
+            errors.add("rate_limit.burst must be between 1 and "
+                    + RateLimiterConfig.MAX_RATE + ", got " + rl.burst());
         }
 
         if (!errors.isEmpty()) {

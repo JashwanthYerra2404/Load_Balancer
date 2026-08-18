@@ -1,11 +1,10 @@
 package com.loadbalancer.pool;
 
+import com.loadbalancer.util.ClientIp;
 import com.sun.net.httpserver.HttpExchange;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.net.InetSocketAddress;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -88,29 +87,10 @@ public class IPHashPool implements BackendPool {
     /**
      * Extracts the client IP address from the HTTP exchange.
      * Returns "unknown" if the remote address is not available.
+     * Delegates to the shared {@link ClientIp} resolver.
      */
     static String extractIP(HttpExchange exchange) {
-        if (exchange == null) return "unknown";
-        
-        // 1. Try X-Forwarded-For
-        String xff = exchange.getRequestHeaders().getFirst("X-Forwarded-For");
-        if (xff != null && !xff.isEmpty()) {
-            // Can contain multiple IPs like "client, proxy1, proxy2"
-            return xff.split(",")[0].trim();
-        }
-        
-        // 2. Try X-Real-IP
-        String xRealIP = exchange.getRequestHeaders().getFirst("X-Real-IP");
-        if (xRealIP != null && !xRealIP.isEmpty()) {
-            return xRealIP;
-        }
-        
-        // 3. Fallback to raw socket remote address
-        InetSocketAddress remote = exchange.getRemoteAddress();
-        if (remote != null && remote.getAddress() != null) {
-            return remote.getAddress().getHostAddress();
-        }
-        return "unknown";
+        return ClientIp.extract(exchange);
     }
 
     /**

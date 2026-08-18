@@ -52,6 +52,11 @@ src/main/java/com/loadbalancer/
     StickySessionPool.java        # Cookie-based affinity (decorator)
   circuit/
     CircuitBreaker.java           # Per-backend circuit breaker
+  ratelimit/
+    RateLimiter.java              # Limiter interface
+    TokenBucketRateLimiter.java   # Lock-free per-client token bucket
+  util/
+    ClientIp.java                 # Shared client-IP resolution
   server/
     LoadBalancerServer.java       # HTTP server with virtual threads
   health/
@@ -59,10 +64,10 @@ src/main/java/com/loadbalancer/
 configs/
   config.yaml                    # Default configuration
 docs/
-  phase1.md ... phase8.md        # Design documents per phase
+  phase1.md ... phase9.md        # Design documents per phase
 src/test/java/com/loadbalancer/
   benchmark/                     # JMH benchmarks (run via run-benchmarks.sh)
-  circuit/ config/ health/ pool/ proxy/ session/
+  circuit/ config/ health/ pool/ proxy/ ratelimit/ session/ util/
 run-benchmarks.sh                # Compiles and runs the JMH suite
 ```
 
@@ -148,6 +153,19 @@ sticky_session:
 
 Response header format: `Set-Cookie: LB_BACKEND=backend-2; Path=/; Max-Age=3600; HttpOnly`
 
+## Rate Limiting
+
+Optional per-client rate limiting protects backends from abusive clients. Each client IP gets a lock-free token bucket (single-CAS admission): a sustained rate plus a bounded burst. Excess requests get `429 Too Many Requests` with a `Retry-After` header — rejected before body buffering or backend selection, at ~24ns per decision.
+
+```yaml
+rate_limit:
+  enabled: false              # Opt-in
+  requests_per_second: 100    # Sustained rate per client
+  burst: 100                  # Max back-to-back requests after idle (default: = rate)
+```
+
+Limits are per-client — one abusive client cannot affect others. The bucket design (tokens + refill time packed into one AtomicLong) is analyzed in [docs/phase9.md](docs/phase9.md).
+
 ## Backend Simulator Endpoints
 
 | Endpoint | Description |
@@ -176,10 +194,10 @@ make test-verbose   # Verbose output
 - [x] Phase 6: Retry Mechanism
 - [x] Phase 7: Circuit Breaker
 - [x] Phase 8: Sticky Sessions
+- [x] Phase 9: Rate Limiter
 
 ## Roadmap
 
-- [ ] Phase 9: Rate Limiter
 - [ ] Phase 10: Graceful Shutdown
 - [ ] Phase 11: Metrics (Prometheus)
 - [ ] Phase 12: Structured Logging
