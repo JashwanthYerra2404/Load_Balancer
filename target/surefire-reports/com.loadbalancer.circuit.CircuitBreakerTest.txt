@@ -1,0 +1,4 @@
+-------------------------------------------------------------------------------
+Test set: com.loadbalancer.circuit.CircuitBreakerTest
+-------------------------------------------------------------------------------
+Tests run: 15, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.307 s -- in com.loadbalancer.circuit.CircuitBreakerTest

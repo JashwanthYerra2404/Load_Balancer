@@ -1,8 +1,12 @@
+com/loadbalancer/ratelimit/RateLimiter.class
+com/loadbalancer/ratelimit/TokenBucketRateLimiter$Bucket.class
 com/loadbalancer/pool/Backend.class
 com/loadbalancer/circuit/CircuitBreaker$State.class
 com/loadbalancer/pool/BackendPool.class
 com/loadbalancer/config/HealthCheckConfig.class
 com/loadbalancer/pool/RoundRobinPool.class
+com/loadbalancer/config/RateLimiterConfig.class
+com/loadbalancer/util/ClientIp.class
 com/loadbalancer/config/ServerConfig.class
 com/loadbalancer/LoadBalancerApplication.class
 com/loadbalancer/config/CircuitBreakerConfig.class
@@ -14,6 +18,7 @@ com/loadbalancer/session/StickySessionPool.class
 com/loadbalancer/proxy/ProxyHandler.class
 com/loadbalancer/pool/IPHashPool.class
 com/loadbalancer/pool/LeastConnectionsPool.class
+com/loadbalancer/ratelimit/TokenBucketRateLimiter.class
 com/loadbalancer/circuit/CircuitBreaker.class
 com/loadbalancer/BackendSimulator.class
 com/loadbalancer/health/HealthChecker.class

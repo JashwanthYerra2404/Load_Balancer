@@ -27,6 +27,14 @@ inline,com/loadbalancer/benchmark/PoolBenchmark.testWeightedRoundRobinSeq
 inline,com/loadbalancer/benchmark/ProxyBenchmark.setup
 inline,com/loadbalancer/benchmark/ProxyBenchmark.testCaptureGet
 inline,com/loadbalancer/benchmark/ProxyBenchmark.testCapturePost
+inline,com/loadbalancer/benchmark/RateLimiterBenchmark.setup
+inline,com/loadbalancer/benchmark/RateLimiterBenchmark.testAdmitConcurrent
+inline,com/loadbalancer/benchmark/RateLimiterBenchmark.testAdmitSeq
+inline,com/loadbalancer/benchmark/RateLimiterBenchmark.testClientIpExtractionSeq
+inline,com/loadbalancer/benchmark/RateLimiterBenchmark.testDenyConcurrent
+inline,com/loadbalancer/benchmark/RateLimiterBenchmark.testDenySeq
+inline,com/loadbalancer/benchmark/RateLimiterBenchmark.testManyClientsConcurrent
+inline,com/loadbalancer/benchmark/RateLimiterBenchmark.testRetryAfterMillisSeq
 inline,com/loadbalancer/benchmark/StickySessionBenchmark.setup
 inline,com/loadbalancer/benchmark/StickySessionBenchmark.testBuildCookieHeaderSeq
 inline,com/loadbalancer/benchmark/StickySessionBenchmark.testParseCookieValueConcurrent

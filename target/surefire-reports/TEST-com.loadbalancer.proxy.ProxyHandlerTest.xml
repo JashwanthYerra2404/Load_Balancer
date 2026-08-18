@@ -1,0 +1,198 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://maven.apache.org/surefire/maven-surefire-plugin/xsd/surefire-test-report.xsd" version="3.0.2" name="com.loadbalancer.proxy.ProxyHandlerTest" time="0.242" tests="19" errors="0" skipped="0" failures="0">
+  <properties>
+    <property name="java.specification.version" value="25"/>
+    <property name="sun.jnu.encoding" value="UTF-8"/>
+    <property name="java.class.path" value="/Users/jashwanthyerra/Desktop/Projects/Load_Balancer/target/test-classes:/Users/jashwanthyerra/Desktop/Projects/Load_Balancer/target/classes:/Users/jashwanthyerra/.m2/repository/org/yaml/snakeyaml/2.4/snakeyaml-2.4.jar:/Users/jashwanthyerra/.m2/repository/org/slf4j/slf4j-api/2.0.16/slf4j-api-2.0.16.jar:/Users/jashwanthyerra/.m2/repository/ch/qos/logback/logback-classic/1.5.18/logback-classic-1.5.18.jar:/Users/jashwanthyerra/.m2/repository/ch/qos/logback/logback-core/1.5.18/logback-core-1.5.18.jar:/Users/jashwanthyerra/.m2/repository/com/fasterxml/jackson/core/jackson-databind/2.18.3/jackson-databind-2.18.3.jar:/Users/jashwanthyerra/.m2/repository/com/fasterxml/jackson/core/jackson-annotations/2.18.3/jackson-annotations-2.18.3.jar:/Users/jashwanthyerra/.m2/repository/com/fasterxml/jackson/core/jackson-core/2.18.3/jackson-core-2.18.3.jar:/Users/jashwanthyerra/.m2/repository/org/junit/jupiter/junit-jupiter/5.11.4/junit-jupiter-5.11.4.jar:/Users/jashwanthyerra/.m2/repository/org/junit/jupiter/junit-jupiter-api/5.11.4/junit-jupiter-api-5.11.4.jar:/Users/jashwanthyerra/.m2/repository/org/opentest4j/opentest4j/1.3.0/opentest4j-1.3.0.jar:/Users/jashwanthyerra/.m2/repository/org/junit/platform/junit-platform-commons/1.11.4/junit-platform-commons-1.11.4.jar:/Users/jashwanthyerra/.m2/repository/org/apiguardian/apiguardian-api/1.1.2/apiguardian-api-1.1.2.jar:/Users/jashwanthyerra/.m2/repository/org/junit/jupiter/junit-jupiter-params/5.11.4/junit-jupiter-params-5.11.4.jar:/Users/jashwanthyerra/.m2/repository/org/junit/jupiter/junit-jupiter-engine/5.11.4/junit-jupiter-engine-5.11.4.jar:/Users/jashwanthyerra/.m2/repository/org/junit/platform/junit-platform-engine/1.11.4/junit-platform-engine-1.11.4.jar:/Users/jashwanthyerra/.m2/repository/org/mockito/mockito-core/5.15.2/mockito-core-5.15.2.jar:/Users/jashwanthyerra/.m2/repository/net/bytebuddy/byte-buddy/1.15.11/byte-buddy-1.15.11.jar:/Users/jashwanthyerra/.m2/repository/net/bytebuddy/byte-buddy-agent/1.15.11/byte-buddy-agent-1.15.11.jar:/Users/jashwanthyerra/.m2/repository/org/objenesis/objenesis/3.3/objenesis-3.3.jar:/Users/jashwanthyerra/.m2/repository/org/openjdk/jmh/jmh-core/1.37/jmh-core-1.37.jar:/Users/jashwanthyerra/.m2/repository/net/sf/jopt-simple/jopt-simple/5.0.4/jopt-simple-5.0.4.jar:/Users/jashwanthyerra/.m2/repository/org/apache/commons/commons-math3/3.6.1/commons-math3-3.6.1.jar:/Users/jashwanthyerra/.m2/repository/org/openjdk/jmh/jmh-generator-annprocess/1.37/jmh-generator-annprocess-1.37.jar:"/>
+    <property name="java.vm.vendor" value="Homebrew"/>
+    <property name="sun.arch.data.model" value="64"/>
+    <property name="java.vendor.url" value="https://github.com/Homebrew/homebrew-core/issues"/>
+    <property name="user.timezone" value="Asia/Kolkata"/>
+    <property name="os.name" value="Mac OS X"/>
+    <property name="java.vm.specification.version" value="25"/>
+    <property name="sun.java.launcher" value="SUN_STANDARD"/>
+    <property name="user.country" value="IN"/>
+    <property name="sun.boot.library.path" value="/opt/homebrew/Cellar/openjdk/25.0.2/libexec/openjdk.jdk/Contents/Home/lib"/>
+    <property name="sun.java.command" value="/Users/jashwanthyerra/Desktop/Projects/Load_Balancer/target/surefire/surefirebooter-20260818234506130_3.jar /Users/jashwanthyerra/Desktop/Projects/Load_Balancer/target/surefire 2026-08-18T23-45-06_080-jvmRun1 surefire-20260818234506130_1tmp surefire_0-20260818234506130_2tmp"/>
+    <property name="http.nonProxyHosts" value="local|*.local|169.254/16|*.169.254/16"/>
+    <property name="jdk.debug" value="release"/>
+    <property name="surefire.test.class.path" value="/Users/jashwanthyerra/Desktop/Projects/Load_Balancer/target/test-classes:/Users/jashwanthyerra/Desktop/Projects/Load_Balancer/target/classes:/Users/jashwanthyerra/.m2/repository/org/yaml/snakeyaml/2.4/snakeyaml-2.4.jar:/Users/jashwanthyerra/.m2/repository/org/slf4j/slf4j-api/2.0.16/slf4j-api-2.0.16.jar:/Users/jashwanthyerra/.m2/repository/ch/qos/logback/logback-classic/1.5.18/logback-classic-1.5.18.jar:/Users/jashwanthyerra/.m2/repository/ch/qos/logback/logback-core/1.5.18/logback-core-1.5.18.jar:/Users/jashwanthyerra/.m2/repository/com/fasterxml/jackson/core/jackson-databind/2.18.3/jackson-databind-2.18.3.jar:/Users/jashwanthyerra/.m2/repository/com/fasterxml/jackson/core/jackson-annotations/2.18.3/jackson-annotations-2.18.3.jar:/Users/jashwanthyerra/.m2/repository/com/fasterxml/jackson/core/jackson-core/2.18.3/jackson-core-2.18.3.jar:/Users/jashwanthyerra/.m2/repository/org/junit/jupiter/junit-jupiter/5.11.4/junit-jupiter-5.11.4.jar:/Users/jashwanthyerra/.m2/repository/org/junit/jupiter/junit-jupiter-api/5.11.4/junit-jupiter-api-5.11.4.jar:/Users/jashwanthyerra/.m2/repository/org/opentest4j/opentest4j/1.3.0/opentest4j-1.3.0.jar:/Users/jashwanthyerra/.m2/repository/org/junit/platform/junit-platform-commons/1.11.4/junit-platform-commons-1.11.4.jar:/Users/jashwanthyerra/.m2/repository/org/apiguardian/apiguardian-api/1.1.2/apiguardian-api-1.1.2.jar:/Users/jashwanthyerra/.m2/repository/org/junit/jupiter/junit-jupiter-params/5.11.4/junit-jupiter-params-5.11.4.jar:/Users/jashwanthyerra/.m2/repository/org/junit/jupiter/junit-jupiter-engine/5.11.4/junit-jupiter-engine-5.11.4.jar:/Users/jashwanthyerra/.m2/repository/org/junit/platform/junit-platform-engine/1.11.4/junit-platform-engine-1.11.4.jar:/Users/jashwanthyerra/.m2/repository/org/mockito/mockito-core/5.15.2/mockito-core-5.15.2.jar:/Users/jashwanthyerra/.m2/repository/net/bytebuddy/byte-buddy/1.15.11/byte-buddy-1.15.11.jar:/Users/jashwanthyerra/.m2/repository/net/bytebuddy/byte-buddy-agent/1.15.11/byte-buddy-agent-1.15.11.jar:/Users/jashwanthyerra/.m2/repository/org/objenesis/objenesis/3.3/objenesis-3.3.jar:/Users/jashwanthyerra/.m2/repository/org/openjdk/jmh/jmh-core/1.37/jmh-core-1.37.jar:/Users/jashwanthyerra/.m2/repository/net/sf/jopt-simple/jopt-simple/5.0.4/jopt-simple-5.0.4.jar:/Users/jashwanthyerra/.m2/repository/org/apache/commons/commons-math3/3.6.1/commons-math3-3.6.1.jar:/Users/jashwanthyerra/.m2/repository/org/openjdk/jmh/jmh-generator-annprocess/1.37/jmh-generator-annprocess-1.37.jar:"/>
+    <property name="sun.cpu.endian" value="little"/>
+    <property name="user.home" value="/Users/jashwanthyerra"/>
+    <property name="user.language" value="en"/>
+    <property name="java.specification.vendor" value="Oracle Corporation"/>
+    <property name="java.version.date" value="2026-01-20"/>
+    <property name="java.home" value="/opt/homebrew/Cellar/openjdk/25.0.2/libexec/openjdk.jdk/Contents/Home"/>
+    <property name="file.separator" value="/"/>
+    <property name="basedir" value="/Users/jashwanthyerra/Desktop/Projects/Load_Balancer"/>
+    <property name="java.vm.compressedOopsMode" value="Zero based"/>
+    <property name="line.separator" value="&#10;"/>
+    <property name="java.vm.specification.vendor" value="Oracle Corporation"/>
+    <property name="java.specification.name" value="Java Platform API Specification"/>
+    <property name="apple.awt.application.name" value="ForkedBooter"/>
+    <property name="surefire.real.class.path" value="/Users/jashwanthyerra/Desktop/Projects/Load_Balancer/target/surefire/surefirebooter-20260818234506130_3.jar"/>
+    <property name="sun.management.compiler" value="HotSpot 64-Bit Tiered Compilers"/>
+    <property name="ftp.nonProxyHosts" value="local|*.local|169.254/16|*.169.254/16"/>
+    <property name="java.runtime.version" value="25.0.2"/>
+    <property name="user.name" value="jashwanthyerra"/>
+    <property name="stdout.encoding" value="UTF-8"/>
+    <property name="path.separator" value=":"/>
+    <property name="os.version" value="26.5.2"/>
+    <property name="java.runtime.name" value="OpenJDK Runtime Environment"/>
+    <property name="file.encoding" value="UTF-8"/>
+    <property name="java.vm.name" value="OpenJDK 64-Bit Server VM"/>
+    <property name="java.vendor.version" value="Homebrew"/>
+    <property name="localRepository" value="/Users/jashwanthyerra/.m2/repository"/>
+    <property name="java.vendor.url.bug" value="https://github.com/Homebrew/homebrew-core/issues"/>
+    <property name="java.io.tmpdir" value="/var/folders/rr/6rh4bmdj291ggn50byw6qgn00000gn/T/"/>
+    <property name="java.version" value="25.0.2"/>
+    <property name="user.dir" value="/Users/jashwanthyerra/Desktop/Projects/Load_Balancer"/>
+    <property name="os.arch" value="aarch64"/>
+    <property name="java.vm.specification.name" value="Java Virtual Machine Specification"/>
+    <property name="native.encoding" value="UTF-8"/>
+    <property name="java.library.path" value="/Users/jashwanthyerra/Library/Java/Extensions:/Library/Java/Extensions:/Network/Library/Java/Extensions:/System/Library/Java/Extensions:/usr/lib/java:."/>
+    <property name="java.vm.info" value="mixed mode, sharing"/>
+    <property name="stderr.encoding" value="UTF-8"/>
+    <property name="java.vendor" value="Homebrew"/>
+    <property name="java.vm.version" value="25.0.2"/>
+    <property name="stdin.encoding" value="UTF-8"/>
+    <property name="sun.io.unicode.encoding" value="UnicodeBig"/>
+    <property name="socksNonProxyHosts" value="local|*.local|169.254/16|*.169.254/16"/>
+    <property name="java.class.version" value="69.0"/>
+  </properties>
+  <testcase name="returns503ForDeadBackend" classname="com.loadbalancer.proxy.ProxyHandlerTest" time="0.025">
+    <system-out><![CDATA[23:45:06.720 [main] INFO com.loadbalancer.pool.Backend -- Backend status changed: backend=dead, alive=false
+23:45:06.721 [main] INFO com.loadbalancer.pool.RoundRobinPool -- Backend added to round-robin pool: backend=dead, url=http://localhost:1, pool_size=1
+23:45:06.724 [HTTP-Dispatcher] WARN com.loadbalancer.pool.RoundRobinPool -- No healthy backends available, total_backends=1
+]]></system-out>
+  </testcase>
+  <testcase name="noRateLimitingWithoutLimiter" classname="com.loadbalancer.proxy.ProxyHandlerTest" time="0.035">
+    <system-out><![CDATA[23:45:06.726 [main] INFO com.loadbalancer.pool.RoundRobinPool -- Backend added to round-robin pool: backend=test-backend, url=http://localhost:55350, pool_size=1
+23:45:06.728 [HTTP-Dispatcher] INFO com.loadbalancer.proxy.ProxyHandler -- Proxying request: method=GET, path=/test, remote_addr=/127.0.0.1:55352, backend=test-backend, active_conns=0
+23:45:06.733 [HTTP-Dispatcher] INFO com.loadbalancer.proxy.ProxyHandler -- Proxying request: method=GET, path=/test, remote_addr=/127.0.0.1:55352, backend=test-backend, active_conns=0
+23:45:06.735 [HTTP-Dispatcher] INFO com.loadbalancer.proxy.ProxyHandler -- Proxying request: method=GET, path=/test, remote_addr=/127.0.0.1:55352, backend=test-backend, active_conns=0
+23:45:06.737 [HTTP-Dispatcher] INFO com.loadbalancer.proxy.ProxyHandler -- Proxying request: method=GET, path=/test, remote_addr=/127.0.0.1:55352, backend=test-backend, active_conns=0
+23:45:06.739 [HTTP-Dispatcher] INFO com.loadbalancer.proxy.ProxyHandler -- Proxying request: method=GET, path=/test, remote_addr=/127.0.0.1:55352, backend=test-backend, active_conns=0
+23:45:06.740 [HTTP-Dispatcher] INFO com.loadbalancer.proxy.ProxyHandler -- Proxying request: method=GET, path=/test, remote_addr=/127.0.0.1:55352, backend=test-backend, active_conns=0
+23:45:06.742 [HTTP-Dispatcher] INFO com.loadbalancer.proxy.ProxyHandler -- Proxying request: method=GET, path=/test, remote_addr=/127.0.0.1:55352, backend=test-backend, active_conns=0
+23:45:06.743 [HTTP-Dispatcher] INFO com.loadbalancer.proxy.ProxyHandler -- Proxying request: method=GET, path=/test, remote_addr=/127.0.0.1:55352, backend=test-backend, active_conns=0
+23:45:06.744 [HTTP-Dispatcher] INFO com.loadbalancer.proxy.ProxyHandler -- Proxying request: method=GET, path=/test, remote_addr=/127.0.0.1:55352, backend=test-backend, active_conns=0
+23:45:06.746 [HTTP-Dispatcher] INFO com.loadbalancer.proxy.ProxyHandler -- Proxying request: method=GET, path=/test, remote_addr=/127.0.0.1:55352, backend=test-backend, active_conns=0
+23:45:06.747 [HTTP-Dispatcher] INFO com.loadbalancer.proxy.ProxyHandler -- Proxying request: method=GET, path=/test, remote_addr=/127.0.0.1:55352, backend=test-backend, active_conns=0
+23:45:06.748 [HTTP-Dispatcher] INFO com.loadbalancer.proxy.ProxyHandler -- Proxying request: method=GET, path=/test, remote_addr=/127.0.0.1:55352, backend=test-backend, active_conns=0
+23:45:06.750 [HTTP-Dispatcher] INFO com.loadbalancer.proxy.ProxyHandler -- Proxying request: method=GET, path=/test, remote_addr=/127.0.0.1:55352, backend=test-backend, active_conns=0
+23:45:06.751 [HTTP-Dispatcher] INFO com.loadbalancer.proxy.ProxyHandler -- Proxying request: method=GET, path=/test, remote_addr=/127.0.0.1:55352, backend=test-backend, active_conns=0
+23:45:06.752 [HTTP-Dispatcher] INFO com.loadbalancer.proxy.ProxyHandler -- Proxying request: method=GET, path=/test, remote_addr=/127.0.0.1:55352, backend=test-backend, active_conns=0
+23:45:06.754 [HTTP-Dispatcher] INFO com.loadbalancer.proxy.ProxyHandler -- Proxying request: method=GET, path=/test, remote_addr=/127.0.0.1:55352, backend=test-backend, active_conns=0
+23:45:06.755 [HTTP-Dispatcher] INFO com.loadbalancer.proxy.ProxyHandler -- Proxying request: method=GET, path=/test, remote_addr=/127.0.0.1:55352, backend=test-backend, active_conns=0
+23:45:06.757 [HTTP-Dispatcher] INFO com.loadbalancer.proxy.ProxyHandler -- Proxying request: method=GET, path=/test, remote_addr=/127.0.0.1:55352, backend=test-backend, active_conns=0
+23:45:06.758 [HTTP-Dispatcher] INFO com.loadbalancer.proxy.ProxyHandler -- Proxying request: method=GET, path=/test, remote_addr=/127.0.0.1:55352, backend=test-backend, active_conns=0
+23:45:06.759 [HTTP-Dispatcher] INFO com.loadbalancer.proxy.ProxyHandler -- Proxying request: method=GET, path=/test, remote_addr=/127.0.0.1:55352, backend=test-backend, active_conns=0
+]]></system-out>
+  </testcase>
+  <testcase name="rateLimitRejectsWith429AfterBurst" classname="com.loadbalancer.proxy.ProxyHandlerTest" time="0.008">
+    <system-out><![CDATA[23:45:06.762 [main] INFO com.loadbalancer.pool.RoundRobinPool -- Backend added to round-robin pool: backend=test-backend, url=http://localhost:55354, pool_size=1
+23:45:06.765 [HTTP-Dispatcher] INFO com.loadbalancer.proxy.ProxyHandler -- Proxying request: method=GET, path=/test, remote_addr=/127.0.0.1:55356, backend=test-backend, active_conns=0
+23:45:06.767 [HTTP-Dispatcher] INFO com.loadbalancer.proxy.ProxyHandler -- Proxying request: method=GET, path=/test, remote_addr=/127.0.0.1:55356, backend=test-backend, active_conns=0
+23:45:06.768 [HTTP-Dispatcher] INFO com.loadbalancer.proxy.ProxyHandler -- Rate limit exceeded: client=127.0.0.1, retry_after_ms=1000
+]]></system-out>
+  </testcase>
+  <testcase name="retriesOn502AndSucceeds" classname="com.loadbalancer.proxy.ProxyHandlerTest" time="0.014">
+    <system-out><![CDATA[23:45:06.771 [main] INFO com.loadbalancer.pool.RoundRobinPool -- Backend added to round-robin pool: backend=bad-backend, url=http://localhost:55358, pool_size=1
+23:45:06.771 [main] INFO com.loadbalancer.pool.RoundRobinPool -- Backend added to round-robin pool: backend=good-backend, url=http://localhost:55359, pool_size=2
+23:45:06.772 [HTTP-Dispatcher] INFO com.loadbalancer.proxy.ProxyHandler -- Proxying request: method=GET, path=/test, remote_addr=/127.0.0.1:55361, backend=bad-backend, active_conns=0
+23:45:06.773 [HTTP-Dispatcher] WARN com.loadbalancer.proxy.ProxyHandler -- Retrying request: attempt=1/2, backend=bad-backend, reason=HTTP 502, backoff=7ms, path=/test
+]]></system-out>
+  </testcase>
+  <testcase name="stickySessionRoutesToPinnedBackend" classname="com.loadbalancer.proxy.ProxyHandlerTest" time="0.01">
+    <system-out><![CDATA[23:45:06.785 [main] INFO com.loadbalancer.pool.RoundRobinPool -- Backend added to round-robin pool: backend=backend-1, url=http://localhost:55364, pool_size=1
+23:45:06.786 [main] INFO com.loadbalancer.pool.RoundRobinPool -- Backend added to round-robin pool: backend=backend-2, url=http://localhost:55365, pool_size=2
+23:45:06.787 [HTTP-Dispatcher] DEBUG com.loadbalancer.session.StickySessionPool -- Sticky session hit: cookie=LB_BACKEND, backend=backend-2
+23:45:06.787 [HTTP-Dispatcher] INFO com.loadbalancer.proxy.ProxyHandler -- Proxying request: method=GET, path=/test, remote_addr=/127.0.0.1:55367, backend=backend-2, active_conns=0
+23:45:06.789 [HTTP-Dispatcher] DEBUG com.loadbalancer.session.StickySessionPool -- Sticky session hit: cookie=LB_BACKEND, backend=backend-2
+23:45:06.789 [HTTP-Dispatcher] INFO com.loadbalancer.proxy.ProxyHandler -- Proxying request: method=GET, path=/test, remote_addr=/127.0.0.1:55367, backend=backend-2, active_conns=0
+23:45:06.790 [HTTP-Dispatcher] DEBUG com.loadbalancer.session.StickySessionPool -- Sticky session hit: cookie=LB_BACKEND, backend=backend-2
+23:45:06.790 [HTTP-Dispatcher] INFO com.loadbalancer.proxy.ProxyHandler -- Proxying request: method=GET, path=/test, remote_addr=/127.0.0.1:55367, backend=backend-2, active_conns=0
+23:45:06.791 [HTTP-Dispatcher] DEBUG com.loadbalancer.session.StickySessionPool -- Sticky session hit: cookie=LB_BACKEND, backend=backend-2
+23:45:06.791 [HTTP-Dispatcher] INFO com.loadbalancer.proxy.ProxyHandler -- Proxying request: method=GET, path=/test, remote_addr=/127.0.0.1:55367, backend=backend-2, active_conns=0
+23:45:06.792 [HTTP-Dispatcher] DEBUG com.loadbalancer.session.StickySessionPool -- Sticky session hit: cookie=LB_BACKEND, backend=backend-2
+23:45:06.792 [HTTP-Dispatcher] INFO com.loadbalancer.proxy.ProxyHandler -- Proxying request: method=GET, path=/test, remote_addr=/127.0.0.1:55367, backend=backend-2, active_conns=0
+]]></system-out>
+  </testcase>
+  <testcase name="forwardsRequestToBackend" classname="com.loadbalancer.proxy.ProxyHandlerTest" time="0.003">
+    <system-out><![CDATA[23:45:06.795 [main] INFO com.loadbalancer.pool.RoundRobinPool -- Backend added to round-robin pool: backend=test-backend, url=http://localhost:55369, pool_size=1
+23:45:06.795 [HTTP-Dispatcher] INFO com.loadbalancer.proxy.ProxyHandler -- Proxying request: method=GET, path=/api/test, remote_addr=/127.0.0.1:55371, backend=test-backend, active_conns=0
+]]></system-out>
+  </testcase>
+  <testcase name="backoffCalculation" classname="com.loadbalancer.proxy.ProxyHandlerTest" time="0.001"/>
+  <testcase name="rateLimitIsPerClient" classname="com.loadbalancer.proxy.ProxyHandlerTest" time="0.005">
+    <system-out><![CDATA[23:45:06.798 [main] INFO com.loadbalancer.pool.RoundRobinPool -- Backend added to round-robin pool: backend=test-backend, url=http://localhost:55373, pool_size=1
+23:45:06.799 [HTTP-Dispatcher] INFO com.loadbalancer.proxy.ProxyHandler -- Proxying request: method=GET, path=/test, remote_addr=/127.0.0.1:55375, backend=test-backend, active_conns=0
+23:45:06.801 [HTTP-Dispatcher] INFO com.loadbalancer.proxy.ProxyHandler -- Rate limit exceeded: client=127.0.0.1, retry_after_ms=1000
+23:45:06.801 [HTTP-Dispatcher] INFO com.loadbalancer.proxy.ProxyHandler -- Proxying request: method=GET, path=/test, remote_addr=/127.0.0.1:55375, backend=test-backend, active_conns=0
+]]></system-out>
+  </testcase>
+  <testcase name="returns503WhenNoBackendsAvailable" classname="com.loadbalancer.proxy.ProxyHandlerTest" time="0.002"/>
+  <testcase name="circuitBreakerRecoveryWithProbe" classname="com.loadbalancer.proxy.ProxyHandlerTest" time="0.087">
+    <system-out><![CDATA[23:45:06.806 [main] INFO com.loadbalancer.pool.RoundRobinPool -- Backend added to round-robin pool: backend=test-backend, url=http://localhost:55379, pool_size=1
+23:45:06.806 [main] WARN com.loadbalancer.circuit.CircuitBreaker -- Circuit breaker OPENED: backend=test-backend, failures=2 in 5s window
+23:45:06.890 [HTTP-Dispatcher] INFO com.loadbalancer.proxy.ProxyHandler -- Proxying request: method=GET, path=/test, remote_addr=/127.0.0.1:55381, backend=test-backend, active_conns=0
+23:45:06.890 [HTTP-Dispatcher] INFO com.loadbalancer.circuit.CircuitBreaker -- Circuit breaker HALF_OPEN: backend=test-backend, allowing probe request
+23:45:06.891 [HTTP-Dispatcher] INFO com.loadbalancer.circuit.CircuitBreaker -- Circuit breaker CLOSED: backend=test-backend, probe succeeded
+]]></system-out>
+  </testcase>
+  <testcase name="noStickyCookieWhenStickyDisabled" classname="com.loadbalancer.proxy.ProxyHandlerTest" time="0.003">
+    <system-out><![CDATA[23:45:06.893 [main] INFO com.loadbalancer.pool.RoundRobinPool -- Backend added to round-robin pool: backend=test-backend, url=http://localhost:55383, pool_size=1
+23:45:06.894 [HTTP-Dispatcher] INFO com.loadbalancer.proxy.ProxyHandler -- Proxying request: method=GET, path=/test, remote_addr=/127.0.0.1:55385, backend=test-backend, active_conns=0
+]]></system-out>
+  </testcase>
+  <testcase name="noRetryOn200" classname="com.loadbalancer.proxy.ProxyHandlerTest" time="0.003">
+    <system-out><![CDATA[23:45:06.897 [main] INFO com.loadbalancer.pool.RoundRobinPool -- Backend added to round-robin pool: backend=backend-1, url=http://localhost:55387, pool_size=1
+23:45:06.898 [HTTP-Dispatcher] INFO com.loadbalancer.proxy.ProxyHandler -- Proxying request: method=GET, path=/test, remote_addr=/127.0.0.1:55389, backend=backend-1, active_conns=0
+]]></system-out>
+  </testcase>
+  <testcase name="noRetryOn404" classname="com.loadbalancer.proxy.ProxyHandlerTest" time="0.003">
+    <system-out><![CDATA[23:45:06.900 [main] INFO com.loadbalancer.pool.RoundRobinPool -- Backend added to round-robin pool: backend=backend-1, url=http://localhost:55391, pool_size=1
+23:45:06.901 [HTTP-Dispatcher] INFO com.loadbalancer.proxy.ProxyHandler -- Proxying request: method=GET, path=/test, remote_addr=/127.0.0.1:55393, backend=backend-1, active_conns=0
+]]></system-out>
+  </testcase>
+  <testcase name="circuitBreakerTripsAfterFailures" classname="com.loadbalancer.proxy.ProxyHandlerTest" time="0.007">
+    <system-out><![CDATA[23:45:06.904 [main] INFO com.loadbalancer.pool.RoundRobinPool -- Backend added to round-robin pool: backend=unreachable, url=http://localhost:1, pool_size=1
+23:45:06.905 [HTTP-Dispatcher] INFO com.loadbalancer.proxy.ProxyHandler -- Proxying request: method=GET, path=/test, remote_addr=/127.0.0.1:55396, backend=unreachable, active_conns=0
+23:45:06.906 [HTTP-Dispatcher] ERROR com.loadbalancer.pool.Backend -- Backend error: backend=unreachable, url=http://localhost:1, error=null
+23:45:06.908 [HTTP-Dispatcher] INFO com.loadbalancer.proxy.ProxyHandler -- Proxying request: method=GET, path=/test, remote_addr=/127.0.0.1:55396, backend=unreachable, active_conns=0
+23:45:06.909 [HTTP-Dispatcher] ERROR com.loadbalancer.pool.Backend -- Backend error: backend=unreachable, url=http://localhost:1, error=null
+23:45:06.909 [HTTP-Dispatcher] WARN com.loadbalancer.circuit.CircuitBreaker -- Circuit breaker OPENED: backend=unreachable, failures=2 in 5s window
+23:45:06.909 [HTTP-Dispatcher] WARN com.loadbalancer.pool.RoundRobinPool -- No healthy backends available, total_backends=1
+]]></system-out>
+  </testcase>
+  <testcase name="retriesOnConnectionFailureAndSucceeds" classname="com.loadbalancer.proxy.ProxyHandlerTest" time="0.013">
+    <system-out><![CDATA[23:45:06.911 [main] INFO com.loadbalancer.pool.RoundRobinPool -- Backend added to round-robin pool: backend=bad-backend, url=http://localhost:1, pool_size=1
+23:45:06.911 [main] INFO com.loadbalancer.pool.RoundRobinPool -- Backend added to round-robin pool: backend=good-backend, url=http://localhost:55401, pool_size=2
+23:45:06.912 [HTTP-Dispatcher] INFO com.loadbalancer.proxy.ProxyHandler -- Proxying request: method=GET, path=/test, remote_addr=/127.0.0.1:55403, backend=bad-backend, active_conns=0
+23:45:06.913 [HTTP-Dispatcher] ERROR com.loadbalancer.pool.Backend -- Backend error: backend=bad-backend, url=http://localhost:1, error=null
+23:45:06.913 [HTTP-Dispatcher] WARN com.loadbalancer.proxy.ProxyHandler -- Retrying request: attempt=1/2, backend=bad-backend, reason=null, backoff=7ms, path=/test
+]]></system-out>
+  </testcase>
+  <testcase name="proxyResultCircuitOpenReturns503" classname="com.loadbalancer.proxy.ProxyHandlerTest" time="0.002"/>
+  <testcase name="noRetryWhenRetriesDisabled" classname="com.loadbalancer.proxy.ProxyHandlerTest" time="0.002">
+    <system-out><![CDATA[23:45:06.926 [main] INFO com.loadbalancer.pool.RoundRobinPool -- Backend added to round-robin pool: backend=unreachable, url=http://localhost:1, pool_size=1
+23:45:06.926 [HTTP-Dispatcher] INFO com.loadbalancer.proxy.ProxyHandler -- Proxying request: method=GET, path=/test, remote_addr=/127.0.0.1:55410, backend=unreachable, active_conns=0
+23:45:06.927 [HTTP-Dispatcher] ERROR com.loadbalancer.pool.Backend -- Backend error: backend=unreachable, url=http://localhost:1, error=null
+]]></system-out>
+  </testcase>
+  <testcase name="stickySessionCookieInResponse" classname="com.loadbalancer.proxy.ProxyHandlerTest" time="0.008">
+    <system-out><![CDATA[23:45:06.928 [main] INFO com.loadbalancer.pool.RoundRobinPool -- Backend added to round-robin pool: backend=test-backend, url=http://localhost:55413, pool_size=1
+23:45:06.929 [HTTP-Dispatcher] INFO com.loadbalancer.proxy.ProxyHandler -- Proxying request: method=GET, path=/test, remote_addr=/127.0.0.1:55415, backend=test-backend, active_conns=0
+]]></system-out>
+  </testcase>
+  <testcase name="stickyFallsBackAndRepinsWhenPinnedBackendDown" classname="com.loadbalancer.proxy.ProxyHandlerTest" time="0.006">
+    <system-out><![CDATA[23:45:06.938 [main] INFO com.loadbalancer.pool.RoundRobinPool -- Backend added to round-robin pool: backend=backend-1, url=http://localhost:55417, pool_size=1
+23:45:06.938 [main] INFO com.loadbalancer.pool.RoundRobinPool -- Backend added to round-robin pool: backend=backend-2, url=http://localhost:55418, pool_size=2
+23:45:06.939 [HTTP-Dispatcher] INFO com.loadbalancer.proxy.ProxyHandler -- Proxying request: method=GET, path=/test, remote_addr=/127.0.0.1:55420, backend=backend-1, active_conns=0
+23:45:06.940 [main] INFO com.loadbalancer.pool.Backend -- Backend status changed: backend=backend-1, alive=false
+23:45:06.940 [HTTP-Dispatcher] INFO com.loadbalancer.session.StickySessionPool -- Sticky session miss: backend=backend-1 unavailable, falling back to algorithm
+23:45:06.940 [HTTP-Dispatcher] INFO com.loadbalancer.proxy.ProxyHandler -- Proxying request: method=GET, path=/test, remote_addr=/127.0.0.1:55420, backend=backend-2, active_conns=0
+]]></system-out>
+  </testcase>
+</testsuite>
